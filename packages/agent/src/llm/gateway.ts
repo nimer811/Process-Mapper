@@ -1,7 +1,7 @@
 import type { z } from 'zod';
 import type { Embedder } from '@process-ai/knowledge';
 
-export type LlmPurpose = 'extract' | 'respond' | 'summarise' | 'rolling_summary' | 'analyse';
+export type LlmPurpose = 'extract' | 'respond' | 'summarise' | 'rolling_summary' | 'analyse' | 'classify' | 'design';
 
 export interface LlmCallRecord {
   purpose: LlmPurpose;

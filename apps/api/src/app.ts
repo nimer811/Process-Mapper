@@ -11,7 +11,7 @@ import {
   type ZodTypeProvider,
 } from 'fastify-type-provider-zod';
 import type { Db } from '@process-ai/db';
-import { AiSdkGateway, type LlmGateway } from '@process-ai/agent';
+import { AiSdkGateway, LlmDocumentClassifier, type LlmGateway } from '@process-ai/agent';
 import { documents, eq } from '@process-ai/db';
 import { ingestDocument, LocalFileStore, type Embedder, type FileStore } from '@process-ai/knowledge';
 import { createInlineQueue, createPgBossQueue, type JobQueue } from './lib/jobs.js';
@@ -72,6 +72,7 @@ export async function buildApp({ config, db, llm, store, jobs }: AppDeps, opts: 
   await app.register(multipart, { limits: UPLOAD_LIMITS });
 
   const embedder: Embedder | null = gateway;
+  const classifier = gateway ? new LlmDocumentClassifier(gateway) : null;
   const ingest = async (documentId: string) => {
     if (!embedder) {
       await db
@@ -81,7 +82,7 @@ export async function buildApp({ config, db, llm, store, jobs }: AppDeps, opts: 
       return;
     }
     try {
-      const result = await ingestDocument({ db, store: fileStore, embedder }, documentId);
+      const result = await ingestDocument({ db, store: fileStore, embedder, classifier }, documentId);
       app.log.info({ documentId, chunks: result?.chunks }, 'Document indexed');
     } catch (err) {
       app.log.warn({ err, documentId }, 'Document indexing failed');

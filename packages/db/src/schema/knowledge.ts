@@ -6,6 +6,7 @@ import {
   date,
   index,
   integer,
+  numeric,
   pgEnum,
   pgTable,
   text,
@@ -14,13 +15,14 @@ import {
   uuid,
   vector,
 } from 'drizzle-orm/pg-core';
-import { documentCategories, documentStatuses, EMBEDDING_DIMENSIONS } from '@process-ai/shared';
+import { classificationSources, documentCategories, documentStatuses, EMBEDDING_DIMENSIONS } from '@process-ai/shared';
 import { id, timestamps } from './columns.js';
 import { departments, users } from './identity.js';
 import { processes } from './process.js';
 
 export const documentCategory = pgEnum('document_category', documentCategories);
 export const documentStatus = pgEnum('document_status', documentStatuses);
+export const classificationSource = pgEnum('classification_source', classificationSources);
 
 const tsvector = customType<{ data: string }>({ dataType: () => 'tsvector' });
 
@@ -40,9 +42,8 @@ export const documents = pgTable(
   'documents',
   {
     id: id(),
-    knowledgeBaseId: uuid()
-      .notNull()
-      .references(() => knowledgeBases.id),
+    /** Null while a bulk upload is waiting to be sorted (or needs an admin to choose). */
+    knowledgeBaseId: uuid().references(() => knowledgeBases.id),
     title: text().notNull(),
     filename: text().notNull(),
     mimeType: text().notNull(),
@@ -51,6 +52,12 @@ export const documents = pgTable(
     /** Key in the file store (never derived from the user's filename). */
     storageKey: text().notNull(),
     category: documentCategory().notNull(),
+    /** Who decided the category/knowledge base: the uploader, the AI, or filename rules. */
+    categorySource: classificationSource().notNull().default('user'),
+    classificationConfidence: numeric({ precision: 3, scale: 2, mode: 'number' }),
+    classificationReason: text(),
+    /** The AI wasn't confident (or couldn't choose a knowledge base); an admin should check. */
+    needsReview: boolean().notNull().default(false),
     /** Optional link to one process. */
     processId: uuid().references(() => processes.id, { onDelete: 'set null' }),
     docVersion: text(),

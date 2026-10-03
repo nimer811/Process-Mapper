@@ -40,7 +40,7 @@ export class AiSdkGateway implements LlmGateway {
   }
 
   private pick(purpose: LlmPurpose) {
-    return purpose === 'extract' || purpose === 'analyse' ? this.models.extract : this.models.chat;
+    return purpose === 'extract' || purpose === 'analyse' || purpose === 'design' ? this.models.extract : this.models.chat;
   }
 
   async embed(texts: string[]): Promise<number[][]> {

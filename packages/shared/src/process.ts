@@ -291,3 +291,13 @@ export type FindingSource = z.infer<typeof FindingSource>;
 export const findingStatuses = ['proposed', 'accepted', 'dismissed'] as const;
 export const FindingStatus = z.enum(findingStatuses);
 export type FindingStatus = z.infer<typeof FindingStatus>;
+
+/** Who set a document's category and knowledge base. */
+export const classificationSources = ['user', 'ai', 'rule'] as const;
+export const ClassificationSource = z.enum(classificationSources);
+export type ClassificationSource = z.infer<typeof ClassificationSource>;
+
+/** Kinds of change in a To-Be design, relative to the As-Is it was based on. */
+export const designChangeTypes = ['added', 'removed', 'modified', 'reconnected', 'rule_added', 'rule_removed'] as const;
+export const DesignChangeType = z.enum(designChangeTypes);
+export type DesignChangeType = z.infer<typeof DesignChangeType>;

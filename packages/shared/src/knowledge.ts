@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { DocumentCategory, DocumentStatus } from './process.js';
+import { ClassificationSource, DocumentCategory, DocumentStatus } from './process.js';
 
 export const KnowledgeBase = z.object({
   id: z.uuid(),
@@ -23,12 +23,18 @@ export type KnowledgeBaseInput = z.infer<typeof KnowledgeBaseInput>;
 
 export const KnowledgeDocument = z.object({
   id: z.uuid(),
-  knowledgeBaseId: z.uuid(),
+  /** Null while a bulk upload is being sorted or waits for an admin to choose. */
+  knowledgeBaseId: z.uuid().nullable(),
+  knowledgeBaseName: z.string().nullable(),
   title: z.string(),
   filename: z.string(),
   mimeType: z.string(),
   sizeBytes: z.number().int(),
   category: DocumentCategory,
+  categorySource: ClassificationSource,
+  classificationConfidence: z.number().nullable(),
+  classificationReason: z.string().nullable(),
+  needsReview: z.boolean(),
   processId: z.uuid().nullable(),
   docVersion: z.string().nullable(),
   effectiveDate: z.string().nullable(),
@@ -43,6 +49,9 @@ export type KnowledgeDocument = z.infer<typeof KnowledgeDocument>;
 
 export const DocumentPatch = z.object({
   title: z.string().trim().min(1).max(200).optional(),
+  knowledgeBaseId: z.uuid().optional(),
+  /** Admin confirms the AI's filing as-is. */
+  reviewed: z.literal(true).optional(),
   category: DocumentCategory.optional(),
   docVersion: z.string().trim().max(50).nullable().optional(),
   effectiveDate: z.iso.date().nullable().optional(),
@@ -68,3 +77,9 @@ export const KnowledgeSearchResult = z.object({
   score: z.number(),
 });
 export type KnowledgeSearchResult = z.infer<typeof KnowledgeSearchResult>;
+
+export const BulkUploadResult = z.object({
+  created: z.array(KnowledgeDocument),
+  rejected: z.array(z.object({ filename: z.string(), reason: z.string() })),
+});
+export type BulkUploadResult = z.infer<typeof BulkUploadResult>;

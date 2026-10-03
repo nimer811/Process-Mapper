@@ -9,3 +9,4 @@ export { analyzeProcess } from './analysis/heuristics.js';
 export { aiAnalysis } from './analysis/ai-analysis.js';
 export type { Findings, IssueFinding, OpportunityFinding } from './analysis/types.js';
 export { graphOutline } from './analysis/outline.js';
+export { LlmDocumentClassifier } from './knowledge-classifier.js';

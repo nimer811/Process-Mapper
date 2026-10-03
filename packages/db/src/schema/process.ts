@@ -100,6 +100,9 @@ export const processVersions = pgTable(
     scopeNotes: text(),
     completenessScore: numeric({ precision: 5, scale: 2, mode: 'number' }),
     changeSummary: text(),
+    /** To-Be designs: the goals given and the AI's summary of the design. */
+    designGoals: text(),
+    designSummary: text(),
     createdBy: uuid().references(() => users.id),
     submittedAt: timestamp({ withTimezone: true }),
     validatedBy: uuid().references(() => users.id),

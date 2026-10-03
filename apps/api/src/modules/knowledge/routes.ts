@@ -1,5 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto';
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
+import type { FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { documents, eq, knowledgeBases, type Db } from '@process-ai/db';
 import {
@@ -12,6 +13,7 @@ import {
   type FileStore,
 } from '@process-ai/knowledge';
 import {
+  BulkUploadResult,
   DocumentCategory,
   DocumentPatch,
   KnowledgeBase,
@@ -28,7 +30,8 @@ const IdParams = z.object({ id: z.uuid() });
 
 const UploadFields = z.object({
   title: z.string().trim().max(200).optional(),
-  category: DocumentCategory,
+  /** Omit (or "auto") to let the AI choose. */
+  category: DocumentCategory.optional(),
   docVersion: z.string().trim().max(50).optional(),
   effectiveDate: z.iso.date().optional(),
   processId: z.uuid().optional(),
@@ -74,13 +77,19 @@ export const knowledgeRoutes: FastifyPluginAsyncZod<{
               createdBy: request.user!.id,
             })
             .returning();
-          await audit(tx as unknown as Db, request, { action: 'knowledge_base.created', entityType: 'knowledge_base', entityId: kb!.id, after: kb });
+          await audit(tx as unknown as Db, request, {
+            action: 'knowledge_base.created',
+            entityType: 'knowledge_base',
+            entityId: kb!.id,
+            after: kb,
+          });
           return kb!;
         });
         const [kb] = await listKnowledgeBases(db, { includeInactive: true, id: created.id });
         return reply.status(201).send(kb!);
       } catch (e) {
-        if (isUniqueViolation(e)) throw app.httpErrors.conflict('A knowledge base with this name already exists');
+        if (isUniqueViolation(e))
+          throw app.httpErrors.conflict('A knowledge base with this name already exists');
         throw e;
       }
     },
@@ -88,10 +97,18 @@ export const knowledgeRoutes: FastifyPluginAsyncZod<{
 
   app.patch(
     '/knowledge-bases/:id',
-    { schema: { params: IdParams, body: KnowledgeBaseInput.partial(), response: { 200: KnowledgeBase } } },
+    {
+      schema: {
+        params: IdParams,
+        body: KnowledgeBaseInput.partial(),
+        response: { 200: KnowledgeBase },
+      },
+    },
     async (request) => {
       app.requireRole(request, 'admin');
-      const before = await db.query.knowledgeBases.findFirst({ where: eq(knowledgeBases.id, request.params.id) });
+      const before = await db.query.knowledgeBases.findFirst({
+        where: eq(knowledgeBases.id, request.params.id),
+      });
       if (!before) throw app.httpErrors.notFound('Knowledge base not found');
       const { name, description, departmentId, isActive } = request.body;
       await db.transaction(async (tx) => {
@@ -105,7 +122,13 @@ export const knowledgeRoutes: FastifyPluginAsyncZod<{
           })
           .where(eq(knowledgeBases.id, before.id))
           .returning();
-        await audit(tx as unknown as Db, request, { action: 'knowledge_base.updated', entityType: 'knowledge_base', entityId: before.id, before, after });
+        await audit(tx as unknown as Db, request, {
+          action: 'knowledge_base.updated',
+          entityType: 'knowledge_base',
+          entityId: before.id,
+          before,
+          after,
+        });
       });
       const [kb] = await listKnowledgeBases(db, { includeInactive: true, id: before.id });
       return kb!;
@@ -119,35 +142,46 @@ export const knowledgeRoutes: FastifyPluginAsyncZod<{
     { schema: { params: IdParams, response: { 200: z.array(KnowledgeDocument) } } },
     async (request) => {
       const user = app.requireUser(request);
-      return listDocuments(db, { knowledgeBaseId: request.params.id, activeOnly: !user.roles.includes('admin') });
+      return listDocuments(db, {
+        knowledgeBaseId: request.params.id,
+        activeOnly: !user.roles.includes('admin'),
+      });
     },
   );
 
-  /** Upload (multipart: one `file` plus metadata fields). Indexing runs in the background. */
-  app.post('/knowledge-bases/:id/documents', { schema: { params: IdParams } }, async (request, reply) => {
-    app.requireRole(request, 'admin');
-    const kb = await db.query.knowledgeBases.findFirst({ where: eq(knowledgeBases.id, request.params.id) });
-    if (!kb) throw app.httpErrors.notFound('Knowledge base not found');
+  type StoredFile = { buffer: Buffer; filename: string };
 
+  /** Reads a multipart request: files plus string fields. */
+  const readParts = async (request: FastifyRequest, maxFiles: number) => {
     const fields: Record<string, string> = {};
-    let file: { buffer: Buffer; filename: string } | null = null;
+    const files: StoredFile[] = [];
     try {
       for await (const part of request.parts()) {
         if (part.type === 'file') {
-          if (file) throw app.httpErrors.badRequest('Upload one file at a time');
-          file = { buffer: await part.toBuffer(), filename: part.filename.slice(0, 200) };
+          if (files.length >= maxFiles)
+            throw app.httpErrors.badRequest(`Upload at most ${maxFiles} file(s) at a time`);
+          files.push({ buffer: await part.toBuffer(), filename: part.filename.slice(0, 200) });
         } else if (typeof part.value === 'string') {
           fields[part.fieldname] = part.value;
         }
       }
     } catch (e) {
-      if ((e as { code?: string }).code === 'FST_REQ_FILE_TOO_LARGE') throw app.httpErrors.payloadTooLarge('The file is larger than 25 MB');
+      if ((e as { code?: string }).code === 'FST_REQ_FILE_TOO_LARGE')
+        throw app.httpErrors.payloadTooLarge('A file is larger than 25 MB');
       throw e;
     }
-    if (!file) throw app.httpErrors.badRequest('No file uploaded');
-    const parsed = UploadFields.safeParse(Object.fromEntries(Object.entries(fields).filter(([, v]) => v !== '')));
-    if (!parsed.success) throw app.httpErrors.badRequest(parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; '));
+    return { fields, files };
+  };
 
+  /**
+   * Checks and stores one file and queues it for indexing. Without a category (or knowledge base)
+   * the AI sorts it during indexing. Throws an HTTP error with a readable reason on rejection.
+   */
+  const storeOne = async (
+    request: FastifyRequest,
+    file: StoredFile,
+    meta: z.infer<typeof UploadFields> & { knowledgeBaseId: string | null },
+  ) => {
     let kind;
     try {
       kind = await inspectFile(file.buffer, file.filename);
@@ -155,27 +189,36 @@ export const knowledgeRoutes: FastifyPluginAsyncZod<{
       if (e instanceof UnsupportedFileError) throw app.httpErrors.unsupportedMediaType(e.message);
       throw e;
     }
-
     const sha256 = createHash('sha256').update(file.buffer).digest('hex');
+    const [dup] = await db
+      .select({ title: documents.title, kb: knowledgeBases.name })
+      .from(documents)
+      .leftJoin(knowledgeBases, eq(knowledgeBases.id, documents.knowledgeBaseId))
+      .where(eq(documents.sha256, sha256));
+    if (dup)
+      throw app.httpErrors.conflict(
+        `Already uploaded as "${dup.title}"${dup.kb ? ` in ${dup.kb}` : ''}`,
+      );
+
     const storageKey = `documents/${randomUUID()}.${extensionFor[kind.kind]}`;
     await store.put(storageKey, file.buffer);
-    let created;
     try {
-      created = await db.transaction(async (tx) => {
+      const created = await db.transaction(async (tx) => {
         const [doc] = await tx
           .insert(documents)
           .values({
-            knowledgeBaseId: kb.id,
-            title: parsed.data.title || file.filename.replace(/\.[^.]+$/, ''),
+            knowledgeBaseId: meta.knowledgeBaseId,
+            title: meta.title || file.filename.replace(/\.[^.]+$/, ''),
             filename: file.filename,
             mimeType: kind.mimeType,
             sizeBytes: file.buffer.length,
             sha256,
             storageKey,
-            category: parsed.data.category,
-            docVersion: parsed.data.docVersion ?? null,
-            effectiveDate: parsed.data.effectiveDate ?? null,
-            processId: parsed.data.processId ?? null,
+            category: meta.category ?? 'other',
+            categorySource: meta.category ? 'user' : 'ai',
+            docVersion: meta.docVersion ?? null,
+            effectiveDate: meta.effectiveDate ?? null,
+            processId: meta.processId ?? null,
             uploadedBy: request.user!.id,
           })
           .returning();
@@ -183,31 +226,136 @@ export const knowledgeRoutes: FastifyPluginAsyncZod<{
           action: 'document.uploaded',
           entityType: 'document',
           entityId: doc!.id,
-          after: { title: doc!.title, filename: doc!.filename, category: doc!.category, sha256 },
+          after: {
+            title: doc!.title,
+            filename: doc!.filename,
+            category: meta.category ?? 'auto',
+            sha256,
+          },
         });
         return doc!;
       });
+      await jobs.enqueueIngest(created.id);
+      return created;
     } catch (e) {
       await store.delete(storageKey);
-      if (isUniqueViolation(e)) throw app.httpErrors.conflict('This file is already in the knowledge base');
+      if (isUniqueViolation(e))
+        throw app.httpErrors.conflict('This file is already in the knowledge base');
       throw e;
     }
+  };
 
-    await jobs.enqueueIngest(created.id);
-    const [doc] = await listDocuments(db, { documentId: created.id });
-    return reply.status(201).send(doc);
-  });
+  const parseFields = (fields: Record<string, string>) => {
+    const parsed = UploadFields.safeParse(
+      Object.fromEntries(Object.entries(fields).filter(([, v]) => v !== '' && v !== 'auto')),
+    );
+    if (!parsed.success)
+      throw app.httpErrors.badRequest(
+        parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; '),
+      );
+    return parsed.data;
+  };
+
+  /** Upload into one knowledge base (multipart: `file` plus optional metadata; no category = auto-detect). */
+  app.post(
+    '/knowledge-bases/:id/documents',
+    { schema: { params: IdParams } },
+    async (request, reply) => {
+      app.requireRole(request, 'admin');
+      const kb = await db.query.knowledgeBases.findFirst({
+        where: eq(knowledgeBases.id, request.params.id),
+      });
+      if (!kb) throw app.httpErrors.notFound('Knowledge base not found');
+      const { fields, files } = await readParts(request, 1);
+      if (!files[0]) throw app.httpErrors.badRequest('No file uploaded');
+      const created = await storeOne(request, files[0], {
+        ...parseFields(fields),
+        knowledgeBaseId: kb.id,
+      });
+      const [doc] = await listDocuments(db, { documentId: created.id });
+      return reply.status(201).send(doc);
+    },
+  );
+
+  /**
+   * Smart bulk upload: any number of files, no metadata needed. The AI files each one into the right
+   * knowledge base and category while indexing; unsure cases go to the review inbox.
+   */
+  app.post(
+    '/documents/bulk',
+    { schema: { response: { 201: BulkUploadResult } } },
+    async (request, reply) => {
+      app.requireRole(request, 'admin');
+      const { files } = await readParts(request, MAX_BULK_FILES);
+      if (!files.length) throw app.httpErrors.badRequest('No files uploaded');
+      const createdIds: string[] = [];
+      const rejected: { filename: string; reason: string }[] = [];
+      for (const file of files) {
+        try {
+          createdIds.push((await storeOne(request, file, { knowledgeBaseId: null })).id);
+        } catch (e) {
+          rejected.push({
+            filename: file.filename,
+            reason: e instanceof Error ? e.message : 'Upload failed',
+          });
+        }
+      }
+      return reply
+        .status(201)
+        .send({ created: await listDocuments(db, { documentIds: createdIds }), rejected });
+    },
+  );
+
+  /** Documents being sorted, unsorted, or flagged for review. */
+  app.get(
+    '/documents/inbox',
+    { schema: { response: { 200: z.array(KnowledgeDocument) } } },
+    async (request) => {
+      app.requireRole(request, 'admin');
+      return listDocuments(db, { inbox: true });
+    },
+  );
 
   app.patch(
     '/documents/:id',
     { schema: { params: IdParams, body: DocumentPatch, response: { 200: KnowledgeDocument } } },
     async (request) => {
       app.requireRole(request, 'admin');
-      const before = await db.query.documents.findFirst({ where: eq(documents.id, request.params.id) });
+      const before = await db.query.documents.findFirst({
+        where: eq(documents.id, request.params.id),
+      });
       if (!before) throw app.httpErrors.notFound('Document not found');
+      const { reviewed, ...changes } = request.body;
+      if (changes.knowledgeBaseId) {
+        const kb = await db.query.knowledgeBases.findFirst({
+          where: eq(knowledgeBases.id, changes.knowledgeBaseId),
+        });
+        if (!kb) throw app.httpErrors.badRequest('Unknown knowledge base');
+      }
+      // An admin choosing the category or knowledge base (or confirming the AI's choice) settles it.
+      const settles =
+        reviewed || changes.category !== undefined || changes.knowledgeBaseId !== undefined;
+      const set = {
+        ...changes,
+        ...(changes.category !== undefined && { categorySource: 'user' as const }),
+        ...(settles && { needsReview: false }),
+      };
+      if (settles && !(changes.knowledgeBaseId ?? before.knowledgeBaseId)) {
+        throw app.httpErrors.badRequest('Choose a knowledge base for this document');
+      }
       await db.transaction(async (tx) => {
-        const [after] = await tx.update(documents).set(request.body).where(eq(documents.id, before.id)).returning();
-        await audit(tx as unknown as Db, request, { action: 'document.updated', entityType: 'document', entityId: before.id, before: { ...before }, after });
+        const [after] = await tx
+          .update(documents)
+          .set(set)
+          .where(eq(documents.id, before.id))
+          .returning();
+        await audit(tx as unknown as Db, request, {
+          action: 'document.updated',
+          entityType: 'document',
+          entityId: before.id,
+          before: { ...before },
+          after,
+        });
       });
       const [doc] = await listDocuments(db, { documentId: before.id });
       return doc!;
@@ -218,7 +366,10 @@ export const knowledgeRoutes: FastifyPluginAsyncZod<{
     app.requireRole(request, 'admin');
     const doc = await db.query.documents.findFirst({ where: eq(documents.id, request.params.id) });
     if (!doc) throw app.httpErrors.notFound('Document not found');
-    await db.update(documents).set({ status: 'pending', error: null }).where(eq(documents.id, doc.id));
+    await db
+      .update(documents)
+      .set({ status: 'pending', error: null })
+      .where(eq(documents.id, doc.id));
     await jobs.enqueueIngest(doc.id);
     return reply.status(202).send();
   });
@@ -243,14 +394,20 @@ export const knowledgeRoutes: FastifyPluginAsyncZod<{
   app.get('/documents/:id/download', { schema: { params: IdParams } }, async (request, reply) => {
     const user = app.requireUser(request);
     const doc = await db.query.documents.findFirst({ where: eq(documents.id, request.params.id) });
-    const kb = doc && (await db.query.knowledgeBases.findFirst({ where: eq(knowledgeBases.id, doc.knowledgeBaseId) }));
-    const visible = doc && kb && (user.roles.includes('admin') || (doc.isActive && kb.isActive));
+    const kb = doc?.knowledgeBaseId
+      ? await db.query.knowledgeBases.findFirst({ where: eq(knowledgeBases.id, doc.knowledgeBaseId) })
+      : null;
+    // Admins can open anything (including unsorted uploads); others only sorted, active documents.
+    const visible = doc && (user.roles.includes('admin') || (kb && doc.isActive && kb.isActive));
     if (!visible) throw app.httpErrors.notFound('Document not found');
     const body = await store.get(doc.storageKey);
     const safeName = doc.filename.replace(/[^\w.\- ]/g, '_');
     return reply
       .type(doc.mimeType)
-      .header('content-disposition', `attachment; filename="${safeName}"; filename*=UTF-8''${encodeURIComponent(doc.filename)}`)
+      .header(
+        'content-disposition',
+        `attachment; filename="${safeName}"; filename*=UTF-8''${encodeURIComponent(doc.filename)}`,
+      )
       .header('x-content-type-options', 'nosniff')
       .send(body);
   });
@@ -273,7 +430,10 @@ export const knowledgeRoutes: FastifyPluginAsyncZod<{
     { schema: { body: KnowledgeSearchInput, response: { 200: z.array(KnowledgeSearchResult) } } },
     async (request) => {
       app.requireRole(request, 'admin');
-      if (!embedder) throw app.httpErrors.serviceUnavailable('The embedding model is not configured. Set LLM_API_KEY.');
+      if (!embedder)
+        throw app.httpErrors.serviceUnavailable(
+          'The embedding model is not configured. Set LLM_API_KEY.',
+        );
       const results = await searchKnowledge(db, embedder, {
         query: request.body.query,
         departmentId: request.body.departmentId ?? null,
@@ -293,4 +453,5 @@ export const knowledgeRoutes: FastifyPluginAsyncZod<{
   );
 };
 
-export const UPLOAD_LIMITS = { fileSize: MAX_UPLOAD_BYTES, files: 1, fields: 10 };
+const MAX_BULK_FILES = 50;
+export const UPLOAD_LIMITS = { fileSize: MAX_UPLOAD_BYTES, files: MAX_BULK_FILES, fields: 10 };

@@ -1,5 +1,5 @@
 import { index, pgEnum, pgTable, text, timestamp, unique, uuid } from 'drizzle-orm/pg-core';
-import { findingSources, findingStatuses, issueCategories, levels, opportunityKinds } from '@process-ai/shared';
+import { designChangeTypes, findingSources, findingStatuses, issueCategories, levels, opportunityKinds } from '@process-ai/shared';
 import { id, timestamps } from './columns.js';
 import { users } from './identity.js';
 import { processSteps, processVersions } from './process.js';
@@ -46,4 +46,25 @@ export const automationOpportunities = pgTable(
     effort: level().notNull().default('medium'),
   },
   (t) => [unique().on(t.versionId, t.findingKey), index().on(t.versionId)],
+);
+
+export const designChangeType = pgEnum('design_change_type', designChangeTypes);
+
+/** What a To-Be design changed relative to its As-Is, and why. */
+export const designChanges = pgTable(
+  'design_changes',
+  {
+    id: id(),
+    versionId: uuid()
+      .notNull()
+      .references(() => processVersions.id, { onDelete: 'cascade' }),
+    changeType: designChangeType().notNull(),
+    /** Step key in the To-Be (or the As-Is key for removed steps). */
+    stepKey: text(),
+    description: text().notNull(),
+    rationale: text().notNull(),
+    opportunityId: uuid().references(() => automationOpportunities.id, { onDelete: 'set null' }),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index().on(t.versionId)],
 );

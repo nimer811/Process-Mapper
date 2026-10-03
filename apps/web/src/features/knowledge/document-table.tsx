@@ -96,7 +96,20 @@ export function DocumentTable({
                   {d.filename} · {formatBytes(d.sizeBytes)}
                 </div>
               </TableCell>
-              <TableCell>{documentCategoryLabels[d.category]}</TableCell>
+              <TableCell>
+                {documentCategoryLabels[d.category]}
+                {d.categorySource !== 'user' && (
+                  <span
+                    className="text-muted-foreground ml-1 text-[10px] uppercase"
+                    title={d.classificationReason ?? undefined}
+                  >
+                    {d.categorySource === 'ai' ? 'AI' : 'auto'}
+                  </span>
+                )}
+                {d.needsReview && (
+                  <div className="text-xs text-amber-700 dark:text-amber-400">Needs review</div>
+                )}
+              </TableCell>
               <TableCell>
                 {d.docVersion ?? '—'}
                 {d.effectiveDate && (

@@ -29,7 +29,7 @@ export function UploadCard({ knowledgeBaseId }: { knowledgeBaseId: string }) {
   const queryClient = useQueryClient();
   const inputRef = useRef<HTMLInputElement>(null);
   const [files, setFiles] = useState<File[]>([]);
-  const [category, setCategory] = useState<DocumentCategory | ''>('');
+  const [category, setCategory] = useState<DocumentCategory | 'auto'>('auto');
   const [docVersion, setDocVersion] = useState('');
   const [effectiveDate, setEffectiveDate] = useState('');
   const [dragging, setDragging] = useState(false);
@@ -42,12 +42,12 @@ export function UploadCard({ knowledgeBaseId }: { knowledgeBaseId: string }) {
   };
 
   const upload = async () => {
-    if (!category || files.length === 0) return;
+    if (files.length === 0) return;
     setUploading(true);
     let ok = 0;
     for (const file of files) {
       const form = new FormData();
-      form.set('category', category);
+      if (category !== 'auto') form.set('category', category);
       if (docVersion) form.set('docVersion', docVersion);
       if (effectiveDate) form.set('effectiveDate', effectiveDate);
       form.set('file', file);
@@ -126,6 +126,7 @@ export function UploadCard({ knowledgeBaseId }: { knowledgeBaseId: string }) {
                 <SelectValue placeholder="Choose…" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="auto">Auto-detect (AI)</SelectItem>
                 {documentCategories.map((c) => (
                   <SelectItem key={c} value={c}>
                     {documentCategoryLabels[c]}
@@ -154,7 +155,7 @@ export function UploadCard({ knowledgeBaseId }: { knowledgeBaseId: string }) {
           </div>
         </div>
         <div className="flex justify-end">
-          <Button onClick={upload} disabled={uploading || !category || files.length === 0}>
+          <Button onClick={upload} disabled={uploading || files.length === 0}>
             {uploading ? <Loader2 className="animate-spin" /> : <FileUp />}
             {uploading ? 'Uploading…' : `Upload${files.length > 1 ? ` ${files.length} files` : ''}`}
           </Button>

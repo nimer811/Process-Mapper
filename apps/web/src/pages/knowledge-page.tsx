@@ -18,6 +18,7 @@ import { KnowledgeBaseDialog } from '@/features/knowledge/knowledge-base-dialog'
 import { DocumentTable } from '@/features/knowledge/document-table';
 import { UploadCard } from '@/features/knowledge/upload-card';
 import { SearchCard } from '@/features/knowledge/search-card';
+import { DocumentInbox, SmartUploadCard } from '@/features/knowledge/smart-upload';
 import { useNavigate } from 'react-router';
 
 /** Knowledge bases list. Admins manage them under /admin/knowledge; everyone can browse /knowledge. */
@@ -52,6 +53,12 @@ export function KnowledgePage({ admin = false }: { admin?: boolean }) {
         description="SOPs, policies, delegation of authority and approval matrices the AI interviewer uses as reference."
         actions={admin ? createButton : undefined}
       />
+      {admin && !!kbs.data?.length && (
+        <div className="mb-6 grid gap-6">
+          <SmartUploadCard />
+          <DocumentInbox knowledgeBases={kbs.data} />
+        </div>
+      )}
       {kbs.isPending ? (
         <Skeleton className="h-32 w-full" />
       ) : !kbs.data?.length ? (
