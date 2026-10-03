@@ -1,5 +1,19 @@
 import { z } from 'zod';
-import { EdgeType, ExecutionMode, Provenance, RuleType, StepType, UserRef, ValidationAction, VersionStatus } from './process.js';
+import {
+  EdgeType,
+  ExecutionMode,
+  FindingSource,
+  FindingStatus,
+  IssueCategory,
+  Level,
+  OpportunityKind,
+  Provenance,
+  RuleType,
+  StepType,
+  UserRef,
+  ValidationAction,
+  VersionStatus,
+} from './process.js';
 
 // ---- Lifecycle ----
 
@@ -147,3 +161,57 @@ export const VersionDiff = z.object({
 export type VersionDiff = z.infer<typeof VersionDiff>;
 
 export { Provenance };
+
+// ---- Improvement analysis ----
+
+
+const findingBase = {
+  id: z.uuid(),
+  stepId: z.uuid().nullable(),
+  title: z.string(),
+  description: z.string(),
+  source: FindingSource,
+  status: FindingStatus,
+  decidedBy: UserRef.nullable(),
+  decidedAt: z.iso.datetime().nullable(),
+  decisionNote: z.string().nullable(),
+  createdAt: z.iso.datetime(),
+};
+
+export const Issue = z.object({ ...findingBase, category: IssueCategory, severity: Level });
+export type Issue = z.infer<typeof Issue>;
+
+export const Opportunity = z.object({
+  ...findingBase,
+  kind: OpportunityKind,
+  expectedBenefit: z.string().nullable(),
+  impact: Level,
+  effort: Level,
+});
+export type Opportunity = z.infer<typeof Opportunity>;
+
+export const Findings = z.object({
+  issues: z.array(Issue),
+  opportunities: z.array(Opportunity),
+  canManage: z.boolean(),
+  aiAvailable: z.boolean(),
+});
+export type Findings = z.infer<typeof Findings>;
+
+export const AnalyseInput = z.object({ ai: z.boolean().default(false) });
+export const AnalyseResult = Findings.extend({ aiError: z.string().nullable() });
+export type AnalyseResult = z.infer<typeof AnalyseResult>;
+
+export const DecideInput = z.object({
+  status: z.enum(['accepted', 'dismissed', 'proposed']),
+  note: z.string().trim().max(1000).optional(),
+});
+
+export const IssueInput = z.object({
+  stepId: z.uuid().nullable(),
+  category: IssueCategory,
+  severity: Level,
+  title: z.string().trim().min(3).max(200),
+  description: z.string().trim().min(3).max(2000),
+});
+export type IssueInput = z.infer<typeof IssueInput>;

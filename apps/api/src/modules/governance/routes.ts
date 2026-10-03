@@ -21,6 +21,7 @@ import {
 import { audit } from '../../lib/audit.js';
 import { canViewVersion } from '../processes/visibility.js';
 import { getVersionGraph } from '../processes/service.js';
+import { runRuleChecks } from '../analysis/service.js';
 import * as edit from './editing.js';
 import {
   archiveProcess,
@@ -90,6 +91,14 @@ export const governanceRoutes: FastifyPluginAsyncZod<{ db: Db }> = async (app, {
     async (request) => {
       const { user, ctx } = await ctxFor(request, request.params.id);
       await transition(db, ctx, user.id, request.body.action, request.body.comment);
+      if (request.body.action === 'validate') {
+        // Validated content gets an automatic rule check (cheap, deterministic, no AI).
+        const graph = await getVersionGraph(db, user, ctx.version.id);
+        if (graph)
+          await runRuleChecks(db, graph).catch((err) =>
+            request.log.warn({ err }, 'Rule checks failed'),
+          );
+      }
       await audit(db, request, {
         action: `version.${request.body.action}`,
         entityType: 'process_version',

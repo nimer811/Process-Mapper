@@ -4,6 +4,7 @@ import type { Db } from '@process-ai/db';
 import type { CurrentUser } from '@process-ai/shared';
 import { getProcess, getVersionGraph, listProcesses } from '../processes/service.js';
 import { buildProcessPackPdf, packFileBase } from './process-pack-pdf.js';
+import { listFindings } from '../analysis/service.js';
 
 /** Everything needed to export one version, or null if the user can't see it. */
 async function loadVersion(db: Db, user: CurrentUser, versionId: string) {
@@ -12,7 +13,8 @@ async function loadVersion(db: Db, user: CurrentUser, versionId: string) {
   const process = await getProcess(db, user, graph.processId);
   if (!process) return null;
   const { scene, svg } = await renderProcessSvg(graph, `${process.name} — v${graph.versionNumber}`);
-  return { process, graph, scene, svg, fileBase: packFileBase(process, graph) };
+  const findings = await listFindings(db, graph.id);
+  return { process, graph, scene, svg, findings, fileBase: packFileBase(process, graph) };
 }
 
 export async function exportMapSvg(db: Db, user: CurrentUser, versionId: string) {

@@ -1,6 +1,15 @@
 import { memo } from 'react';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
-import { Bot, Hand, Monitor, ShieldCheck, User, Workflow } from 'lucide-react';
+import {
+  Bot,
+  Hand,
+  Lightbulb,
+  Monitor,
+  ShieldCheck,
+  TriangleAlert,
+  User,
+  Workflow,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { StepNode } from './layout';
 
@@ -36,6 +45,33 @@ const executionIcon = {
   unknown: null,
 } as const;
 
+/** Small badges for open issues and opportunities on a step. */
+function Markers({ marker }: { marker?: { issues: number; opportunities: number } }) {
+  if (!marker || (!marker.issues && !marker.opportunities)) return null;
+  return (
+    <div className="absolute -top-2.5 right-2 flex gap-1">
+      {marker.issues > 0 && (
+        <span
+          className="flex items-center gap-0.5 rounded-full bg-amber-500 px-1.5 text-[10px] leading-4 font-semibold text-white"
+          title={`${marker.issues} issue(s)`}
+        >
+          <TriangleAlert className="size-2.5" />
+          {marker.issues}
+        </span>
+      )}
+      {marker.opportunities > 0 && (
+        <span
+          className="flex items-center gap-0.5 rounded-full bg-sky-600 px-1.5 text-[10px] leading-4 font-semibold text-white"
+          title={`${marker.opportunities} opportunit(ies)`}
+        >
+          <Lightbulb className="size-2.5" />
+          {marker.opportunities}
+        </span>
+      )}
+    </div>
+  );
+}
+
 export const TaskNode = memo(function TaskNode({ data, selected }: NodeProps<StepNode>) {
   const { step } = data;
   const isApproval = step.type === 'approval';
@@ -43,13 +79,14 @@ export const TaskNode = memo(function TaskNode({ data, selected }: NodeProps<Ste
   return (
     <div
       className={cn(
-        'bg-card text-card-foreground flex h-full w-full flex-col justify-between rounded-lg border px-3 py-2 shadow-xs transition-shadow',
+        'bg-card text-card-foreground relative flex h-full w-full flex-col justify-between rounded-lg border px-3 py-2 shadow-xs transition-shadow',
         isApproval && 'border-l-4 border-l-amber-500',
         provenanceBorder[step.provenance],
         selected && 'ring-ring ring-2 ring-offset-1',
       )}
     >
       <Handles />
+      <Markers marker={data.marker} />
       <div className="text-muted-foreground flex items-center justify-between text-[10px] font-medium tracking-wide uppercase">
         <span className="flex items-center gap-1">
           {isApproval && <ShieldCheck className="size-3 text-amber-600" />}

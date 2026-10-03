@@ -5,3 +5,7 @@ export type { InterviewState } from './interview/state.js';
 export { type LlmGateway, LlmNotConfiguredError } from './llm/gateway.js';
 export { AiSdkGateway, type AiSdkGatewayConfig } from './llm/ai-sdk-gateway.js';
 export { MockGateway } from './llm/mock-gateway.js';
+export { analyzeProcess } from './analysis/heuristics.js';
+export { aiAnalysis } from './analysis/ai-analysis.js';
+export type { Findings, IssueFinding, OpportunityFinding } from './analysis/types.js';
+export { graphOutline } from './analysis/outline.js';

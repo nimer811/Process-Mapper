@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import type { ProcessStep, VersionGraph } from '@process-ai/shared';
+import type { Findings, ProcessStep, VersionGraph } from '@process-ai/shared';
 import { ArrowRight, History, Lightbulb, Pencil, TriangleAlert } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { EvidenceList } from '@/features/governance/evidence-list';
@@ -23,13 +23,29 @@ interface StepPanelProps {
   onSelectStep: (stepId: string) => void;
   /** Present when the viewer may edit this version. */
   onEdit?: (step: ProcessStep) => void;
+  findings?: Findings;
 }
 
-export function StepPanel({ graph, step, onClose, onSelectStep, onEdit }: StepPanelProps) {
+export function StepPanel({
+  graph,
+  step,
+  onClose,
+  onSelectStep,
+  onEdit,
+  findings,
+}: StepPanelProps) {
   return (
     <Sheet open={!!step} onOpenChange={(open) => !open && onClose()}>
       <SheetContent className="w-full gap-0 sm:max-w-md">
-        {step && <StepDetails graph={graph} step={step} onSelectStep={onSelectStep} onEdit={onEdit} />}
+        {step && (
+          <StepDetails
+            graph={graph}
+            step={step}
+            onSelectStep={onSelectStep}
+            onEdit={onEdit}
+            findings={findings}
+          />
+        )}
       </SheetContent>
     </Sheet>
   );
@@ -40,12 +56,20 @@ function StepDetails({
   step,
   onSelectStep,
   onEdit,
+  findings,
 }: {
   graph: VersionGraph;
   step: ProcessStep;
   onSelectStep: (id: string) => void;
   onEdit?: (step: ProcessStep) => void;
+  findings?: Findings;
 }) {
+  const stepIssues = (findings?.issues ?? []).filter(
+    (i) => i.stepId === step.id && i.status !== 'dismissed',
+  );
+  const stepOpps = (findings?.opportunities ?? []).filter(
+    (o) => o.stepId === step.id && o.status !== 'dismissed',
+  );
   const rules = graph.rules.filter((r) => r.stepId === step.id);
   const stepsById = new Map(graph.steps.map((s) => [s.id, s]));
   const outgoing = graph.edges.filter((e) => e.fromStepId === step.id);
@@ -142,14 +166,27 @@ function StepDetails({
           <Separator />
 
           <Section title="Issues" icon={<TriangleAlert className="size-4 text-amber-600" />}>
-            {step.painPoints.length > 0 ? (
+            {stepIssues.length > 0 ? (
+              <ul className="space-y-1.5 text-sm">
+                {stepIssues.map((i) => (
+                  <li key={i.id}>
+                    <span className="font-medium">{i.title}</span>
+                    <span className="text-muted-foreground">
+                      {' '}
+                      · {i.severity}
+                      {i.status === 'accepted' ? ' · accepted' : ''}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : step.painPoints.length > 0 ? (
               <ul className="list-disc space-y-1 pl-5 text-sm">
                 {step.painPoints.map((p) => (
                   <li key={p}>{p}</li>
                 ))}
               </ul>
             ) : (
-              <Muted>No pain points recorded.</Muted>
+              <Muted>No issues recorded.</Muted>
             )}
           </Section>
 
@@ -157,7 +194,22 @@ function StepDetails({
             title="Automation opportunities"
             icon={<Lightbulb className="size-4 text-sky-600" />}
           >
-            <Muted>Identified after validation (Phase 5).</Muted>
+            {stepOpps.length > 0 ? (
+              <ul className="space-y-1.5 text-sm">
+                {stepOpps.map((o) => (
+                  <li key={o.id}>
+                    <span className="font-medium">{o.title}</span>
+                    <span className="text-muted-foreground">
+                      {' '}
+                      · {o.impact} impact, {o.effort} effort
+                      {o.status === 'accepted' ? ' · accepted' : ''}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <Muted>None identified yet. See the Automation tab.</Muted>
+            )}
           </Section>
 
           <Separator />

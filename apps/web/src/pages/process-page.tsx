@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router';
-import { Lightbulb, Pencil, Plus, TriangleAlert } from 'lucide-react';
+import { Pencil, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import type { ProcessDetail, ProcessStep, Readiness, VersionGraph } from '@process-ai/shared';
 import { api, ApiError } from '@/lib/api';
@@ -20,7 +20,6 @@ import {
   Empty,
   EmptyDescription,
   EmptyHeader,
-  EmptyMedia,
   EmptyTitle,
 } from '@/components/ui/empty';
 import { formatDate, humanize } from '@/lib/format';
@@ -40,6 +39,8 @@ import { ConnectionsEditor, RulesEditor } from '@/features/governance/structure-
 import { MetadataDialog } from '@/features/governance/metadata-dialog';
 import { VersionsPanel } from '@/features/governance/versions-panel';
 import { useReadiness, useRefreshProcess } from '@/features/governance/queries';
+import { findingCounts, useFindings } from '@/features/analysis/queries';
+import { IssuesTab, OpportunitiesTab } from '@/features/analysis/findings-tabs';
 
 export function ProcessPage() {
   const { processId = '' } = useParams();
@@ -48,6 +49,7 @@ export function ProcessPage() {
   const versionId = params.get('version') ?? process.data?.defaultVersionId;
   const graph = useVersionGraph(versionId);
   const readiness = useReadiness(versionId);
+  const findings = useFindings(versionId);
   const refresh = useRefreshProcess();
   const [selectedStepId, setSelectedStepId] = useState<string | null>(null);
   const [editingRequested, setEditing] = useState(false);
@@ -128,6 +130,7 @@ export function ProcessPage() {
               graph={g}
               selectedStepId={selectedStepId}
               onSelectStep={setSelectedStepId}
+              markers={findingCounts(findings.data)}
             />
           </Card>
         </TabsContent>
@@ -162,18 +165,10 @@ export function ProcessPage() {
         </TabsContent>
 
         <TabsContent value="issues">
-          <Placeholder
-            icon={<TriangleAlert />}
-            title="Issues"
-            text={`${g.steps.reduce((n, s) => n + s.painPoints.length, 0)} pain points are recorded on steps (see the map). Structured issue analysis arrives in Phase 5.`}
-          />
+          <IssuesTab graph={g} findings={findings.data} onSelectStep={setSelectedStepId} />
         </TabsContent>
         <TabsContent value="automation">
-          <Placeholder
-            icon={<Lightbulb />}
-            title="Automation opportunities"
-            text="Identified from the validated process in Phase 5. Kept separate from the current-state process."
-          />
+          <OpportunitiesTab graph={g} findings={findings.data} onSelectStep={setSelectedStepId} />
         </TabsContent>
         <TabsContent value="documents">
           <ProcessDocuments processId={p.id} />
@@ -194,6 +189,7 @@ export function ProcessPage() {
 
       <StepPanel
         graph={g}
+        findings={findings.data}
         step={selectedStep}
         onClose={() => setSelectedStepId(null)}
         onSelectStep={setSelectedStepId}
@@ -333,17 +329,5 @@ function Meta({ label, children }: { label: string; children: ReactNode }) {
       <dt className="text-muted-foreground text-xs font-medium tracking-wide uppercase">{label}</dt>
       <dd className="mt-0.5">{children || '—'}</dd>
     </div>
-  );
-}
-
-function Placeholder({ icon, title, text }: { icon: ReactNode; title: string; text: string }) {
-  return (
-    <Empty className="border border-dashed">
-      <EmptyHeader>
-        <EmptyMedia variant="icon">{icon}</EmptyMedia>
-        <EmptyTitle>{title}</EmptyTitle>
-        <EmptyDescription>{text}</EmptyDescription>
-      </EmptyHeader>
-    </Empty>
   );
 }

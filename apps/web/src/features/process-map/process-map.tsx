@@ -20,9 +20,11 @@ interface ProcessMapProps {
   graph: VersionGraph;
   selectedStepId: string | null;
   onSelectStep: (stepId: string | null) => void;
+  /** Open issues / opportunities per step, shown as small markers on nodes. */
+  markers?: Record<string, { issues: number; opportunities: number }>;
 }
 
-export function ProcessMap({ graph, selectedStepId, onSelectStep }: ProcessMapProps) {
+export function ProcessMap({ graph, selectedStepId, onSelectStep, markers }: ProcessMapProps) {
   const colorScheme = useColorScheme();
   const containerRef = useRef<HTMLDivElement>(null);
   const layout = useQuery({
@@ -35,10 +37,14 @@ export function ProcessMap({ graph, selectedStepId, onSelectStep }: ProcessMapPr
     if (!layout.data) return null;
     const { nodes, edges } = toFlow(graph, layout.data);
     return {
-      nodes: nodes.map((n): StepNode => ({ ...n, selected: n.id === selectedStepId })),
+      nodes: nodes.map((n): StepNode => ({
+        ...n,
+        selected: n.id === selectedStepId,
+        data: { ...n.data, marker: markers?.[n.id] },
+      })),
       edges,
     };
-  }, [graph, layout.data, selectedStepId]);
+  }, [graph, layout.data, selectedStepId, markers]);
 
   if (!flow) return <Skeleton className="h-full w-full" />;
 

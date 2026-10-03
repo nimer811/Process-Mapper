@@ -258,3 +258,36 @@ export type DocumentStatus = z.infer<typeof DocumentStatus>;
 
 /** Embedding size of the configured embedding model (text-embedding-3-small). Changing it needs a migration. */
 export const EMBEDDING_DIMENSIONS = 1536;
+
+// ---- Improvement analysis (kept separate from the documented process) ----
+
+export const issueCategories = [
+  'manual_work',
+  'duplicate_entry',
+  'unnecessary_approval',
+  'rework',
+  'handoff_delay',
+  'unclear_ownership',
+  'missing_sla',
+  'control_gap',
+  'other',
+] as const;
+export const IssueCategory = z.enum(issueCategories);
+export type IssueCategory = z.infer<typeof IssueCategory>;
+
+export const opportunityKinds = ['workflow', 'integration', 'rpa', 'ai', 'self_service', 'elimination', 'other'] as const;
+export const OpportunityKind = z.enum(opportunityKinds);
+export type OpportunityKind = z.infer<typeof OpportunityKind>;
+
+export const levels = ['low', 'medium', 'high'] as const;
+export const Level = z.enum(levels);
+export type Level = z.infer<typeof Level>;
+
+/** Where a finding came from: the employee (pain point), a rule check, or the AI. */
+export const findingSources = ['user', 'heuristic', 'ai', 'manual'] as const;
+export const FindingSource = z.enum(findingSources);
+export type FindingSource = z.infer<typeof FindingSource>;
+
+export const findingStatuses = ['proposed', 'accepted', 'dismissed'] as const;
+export const FindingStatus = z.enum(findingStatuses);
+export type FindingStatus = z.infer<typeof FindingStatus>;

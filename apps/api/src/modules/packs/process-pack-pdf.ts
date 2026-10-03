@@ -1,7 +1,7 @@
 import PDFDocument from 'pdfkit';
 import type { Scene } from '@process-ai/diagram';
 import { edgeStyle, palette } from '@process-ai/diagram';
-import type { ProcessDetail, Provenance, VersionGraph } from '@process-ai/shared';
+import type { Issue, Opportunity, ProcessDetail, Provenance, VersionGraph } from '@process-ai/shared';
 import { drawScene, drawSceneSlice } from './pdf-scene.js';
 
 type Doc = PDFKit.PDFDocument;
@@ -51,6 +51,8 @@ export interface PackInput {
   process: ProcessDetail;
   graph: VersionGraph;
   scene: Scene;
+  /** Accepted recommendations (shown separately from the documented process). */
+  findings?: { issues: Issue[]; opportunities: Opportunity[] };
   generatedBy: string;
   generatedAt: Date;
 }
@@ -84,6 +86,7 @@ export function buildProcessPackPdf(input: PackInput): Promise<Buffer> {
   pathsSection(doc, g);
   rulesSection(doc, g);
   painPointsSection(doc, g);
+  recommendationsSection(doc, g, input.findings);
   historySection(doc, p);
   decoratePages(doc, input);
 
@@ -420,6 +423,43 @@ function painPointsSection(doc: Doc, g: VersionGraph) {
   );
   doc.moveDown(0.3);
   table(doc, ['Step', 'Pain point'], rows, [220, '*']);
+}
+
+function recommendationsSection(doc: Doc, g: VersionGraph, findings: PackInput['findings']) {
+  const issues = findings?.issues.filter((i) => i.status === 'accepted') ?? [];
+  const opps = findings?.opportunities.filter((o) => o.status === 'accepted') ?? [];
+  if (!issues.length && !opps.length) return;
+  const stepRef = (id: string | null) => {
+    const s = id ? g.steps.find((x) => x.id === id) : null;
+    return s ? `${s.stepKey} ${s.name}` : 'Whole process';
+  };
+  heading(doc, 'Recommendations');
+  para(doc, 'Accepted by the process owner. These are proposals for improvement, not part of the documented current process.', {
+    color: C.muted,
+    size: 9,
+  });
+  doc.moveDown(0.3);
+  if (issues.length) {
+    table(
+      doc,
+      ['Issue', 'Step', 'Category', 'Severity'],
+      issues.map((i) => [`${i.title}\n${i.description}`, stepRef(i.stepId), humanize(i.category), humanize(i.severity)]),
+      ['*', 150, 90, 60],
+    );
+  }
+  if (opps.length) {
+    table(
+      doc,
+      ['Opportunity', 'Step', 'Type', 'Impact / effort'],
+      opps.map((o) => [
+        `${o.title}\n${o.description}${o.expectedBenefit ? `\nBenefit: ${o.expectedBenefit}` : ''}`,
+        stepRef(o.stepId),
+        o.kind === 'ai' ? 'AI' : o.kind === 'rpa' ? 'RPA' : humanize(o.kind),
+        `${humanize(o.impact)} / ${humanize(o.effort)}`,
+      ]),
+      ['*', 150, 80, 80],
+    );
+  }
 }
 
 function historySection(doc: Doc, p: ProcessDetail) {

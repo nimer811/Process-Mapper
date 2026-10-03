@@ -21,6 +21,22 @@ Move resolved notes to `docs/notes/` or `docs/decisions/` once they are settled.
 
 -->
 
+## 2026-10-03 — Phase 5 (Issues & automation opportunities)
+
+**Done:**
+- Migration `0004_improvement_analysis`: issues + automation_opportunities (source user/heuristic/ai/manual, status proposed/accepted/dismissed, stable keys)
+- Rule checks (`packages/agent/src/analysis/heuristics.ts`): pain points → issues; no owner; approval without authority; unclear decision criteria; missing SLAs; rework loops; ≥4 handoffs; stacked approvals; opportunities for integration (re-keying), workflow (email/phone/Excel steps), AI review (not on steps with a control rule), upfront validation for rework loops
+- AI analysis (on demand) proposes issues + opportunities tied to step keys; skips duplicates of rule findings; failures reported without losing rule checks
+- Rule checks run automatically on validation; re-runs keep accept/dismiss decisions and never resurrect dismissed items
+- Issues & Automation tabs (quick wins first), owner-added issues, markers on map nodes, findings in the step panel, accepted items in the PDF pack's Recommendations section
+- Verified with the real model on Vendor Onboarding (7 grounded AI issues, sensible opportunities); demo data restored afterwards
+
+**Still open:**
+- To-Be process generation remains out of MVP scope (opportunities only)
+- Findings aren't copied to new versions (re-run analysis on the new version)
+
+**Next:** Phase 6 — Entra ID, admin & pilot hardening (deployment, security review, smoke tests)
+
 ## 2026-10-03 — Phase 4 (Validation, versioning & provenance)
 
 **Done:**
@@ -37,7 +53,6 @@ Move resolved notes to `docs/notes/` or `docs/decisions/` once they are settled.
 - Interview-created processes have no owner until an admin assigns one (shown in Approvals)
 - Follow-up interview on an existing process (to correct a returned draft) not built yet — edits are form-based
 
-**Next:** Phase 5 — Issues & automation opportunities (heuristics + AI analysis, kept separate from the As-Is)
 
 ## 2026-10-03 — Phase 3 (Knowledge base & SOP grounding)
 

@@ -119,9 +119,7 @@ export function AppSidebar() {
                 <DropdownMenuContent side="top" align="start" className="w-56">
                   <DropdownMenuLabel className="font-normal">
                     <div className="font-medium">{user.displayName}</div>
-                    <div className="text-muted-foreground text-xs">
-                      {user.roles.join(' · ')}
-                    </div>
+                    <div className="text-muted-foreground text-xs">{user.roles.join(' · ')}</div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onSelect={signOut}>
