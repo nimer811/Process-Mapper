@@ -8,15 +8,20 @@
     "build": "tsup",
     "start": "node dist/server.js",
     "typecheck": "tsc -p tsconfig.json",
-    "test": "vitest run"
+    "test": "vitest run",
+    "dev:mock-ai": "tsx --env-file-if-exists=../../.env scripts/dev-mock-ai.ts"
   },
   "dependencies": {
+    "@ai-sdk/azure": "^4.0.90",
+    "@ai-sdk/openai": "^4.0.83",
     "@fastify/cors": "^11.3.0",
     "@fastify/sensible": "^6.0.6",
     "@fastify/static": "^10.1.5",
+    "@process-ai/agent": "workspace:*",
     "@process-ai/db": "workspace:*",
     "@process-ai/diagram": "workspace:*",
     "@process-ai/shared": "workspace:*",
+    "ai": "^7.0.127",
     "drizzle-orm": "^0.45.3",
     "elkjs": "^0.12.0",
     "fastify": "^5.12.5",

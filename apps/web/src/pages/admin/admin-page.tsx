@@ -7,7 +7,7 @@ import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/ca
 const sections: { title: string; description: string; icon: LucideIcon; to?: string; phase?: string }[] = [
   { title: 'Departments', description: 'Create and organise departments.', icon: Building2, to: '/admin/departments' },
   { title: 'Knowledge bases', description: 'Upload SOPs, policies and approval matrices.', icon: BookOpen, phase: 'Phase 3' },
-  { title: 'Interview sessions', description: 'Review AI interview transcripts.', icon: MessagesSquare, phase: 'Phase 2' },
+  { title: 'Interview sessions', description: 'Review AI interview transcripts.', icon: MessagesSquare, to: '/admin/interviews' },
   { title: 'Approvals', description: 'Approve or archive validated processes.', icon: ClipboardCheck, phase: 'Phase 4' },
   { title: 'Users and owners', description: 'Roles and process ownership.', icon: Users, phase: 'Phase 6' },
   { title: 'Audit log', description: 'Who changed what, and when.', icon: ScrollText, phase: 'Phase 6' },

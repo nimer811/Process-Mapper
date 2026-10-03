@@ -10,6 +10,7 @@ import {
   type ZodTypeProvider,
 } from 'fastify-type-provider-zod';
 import type { Db } from '@process-ai/db';
+import { AiSdkGateway, type LlmGateway } from '@process-ai/agent';
 import type { Config } from './config.js';
 import { registerErrorHandling } from './plugins/errors.js';
 import { authPlugin } from './plugins/auth.js';
@@ -18,13 +19,29 @@ import { authRoutes } from './modules/auth/routes.js';
 import { departmentRoutes } from './modules/departments/routes.js';
 import { processRoutes } from './modules/processes/routes.js';
 import { packRoutes } from './modules/packs/routes.js';
+import { interviewRoutes } from './modules/interviews/routes.js';
 
 export interface AppDeps {
   config: Config;
   db: Db;
+  /** Injected in tests; otherwise built from config (null when no API key is set). */
+  llm?: LlmGateway | null;
 }
 
-export async function buildApp({ config, db }: AppDeps, opts: FastifyServerOptions = {}) {
+export function llmFromConfig(config: Config): LlmGateway | null {
+  if (!config.LLM_API_KEY) return null;
+  return new AiSdkGateway({
+    provider: config.LLM_PROVIDER,
+    apiKey: config.LLM_API_KEY,
+    chatModel: config.LLM_CHAT_MODEL,
+    extractionModel: config.LLM_EXTRACTION_MODEL,
+    azureResourceName: config.AZURE_OPENAI_RESOURCE_NAME,
+    azureApiVersion: config.AZURE_OPENAI_API_VERSION,
+  });
+}
+
+export async function buildApp({ config, db, llm }: AppDeps, opts: FastifyServerOptions = {}) {
+  const gateway = llm === undefined ? llmFromConfig(config) : llm;
   const app = Fastify({
     logger: {
       level: config.LOG_LEVEL,
@@ -50,6 +67,7 @@ export async function buildApp({ config, db }: AppDeps, opts: FastifyServerOptio
       await api.register(departmentRoutes, { db });
       await api.register(processRoutes, { db });
       await api.register(packRoutes, { db });
+      await api.register(interviewRoutes, { db, llm: gateway });
     },
     { prefix: '/api/v1' },
   );

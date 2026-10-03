@@ -21,6 +21,23 @@ Move resolved notes to `docs/notes/` or `docs/decisions/` once they are settled.
 
 -->
 
+## 2026-10-03 — Phase 2 (AI interview engine) + PoC chat
+
+**Done:**
+- `packages/agent`: channel-agnostic InterviewEngine. Per turn: extract typed ops (LLM) → validate in code (refs, duplicates, "stated" claims need a real quote or become "inferred") → apply in one transaction with evidence → deterministic gap analysis, stage rules, question selection (max 2) → reply streamed (LLM). Fallbacks if the model fails.
+- State in Postgres (migration `0002_interviews`): sessions, messages, open items, LLM call log; bounded context (outline + open items + rolling summary + last 8 messages)
+- API: start / list / detail / messages (SSE) / pause / resume (recap) / complete; admin sees all sessions read-only
+- Web: Interviews list, interview workspace (chat + live map + open questions), Home "Map a process", Admin → Interview sessions
+- **Plan change:** Teams removed from schedule → Phase 7 is a temporary PoC chat (`/chat`, built); production channel decided after the PoC (Phase 8)
+- Dev-only mock interviewer: `pnpm --filter @process-ai/api dev:mock-ai`
+- Tests: agent 17, API 29, diagram 5, web 1 — all green; browser-tested with the mock (desktop + mobile)
+
+**Still open:**
+- Add `LLM_API_KEY` to `.env` and run a real interview; tune prompts on real Procurement conversations
+- Interview quality not yet evaluated against a real model (needs the key)
+
+**Next:** Phase 3 — Knowledge base (KB containers + categories in Admin, upload, vectorise) and SOP grounding
+
 ## 2026-10-03 — Phase 1 (Process Library & Map) complete
 
 **Done:**
@@ -42,7 +59,6 @@ Move resolved notes to `docs/notes/` or `docs/decisions/` once they are settled.
 - Map rendering shared by web and API via `packages/diagram` (ELK layout → scene → SVG / pdfkit)
 - Known limit: PDF uses built-in Helvetica, so Arabic text won't render until an Arabic font is embedded
 
-**Next:** Phase 2 — AI interview engine (web)
 
 ## 2026-10-03 — Plan approved, Phase 0 (Foundation) complete
 

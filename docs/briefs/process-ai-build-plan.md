@@ -527,7 +527,7 @@ No drag-and-drop map editing in MVP — edits happen through forms or a follow-u
 
 ---
 
-## 7. Teams Integration Plan
+## 7. Teams Integration Plan (reference option — not scheduled; see Phase 7/8)
 
 ```
 Teams client → Azure Bot Service → POST /api/messages (Teams adapter, Teams SDK)
@@ -621,11 +621,15 @@ Every phase ends with the app runnable, tests green, and a short demo.
 - **Acceptance**: pilot users sign in with corporate accounts; MVP Definition of Done (§10) met in the deployed environment.
 - *Note*: Entra can move earlier as soon as app registrations exist — the auth plugin is designed for it in Phase 0.
 
-### Phase 7 — Microsoft Teams Channel (post pilot launch)
-- **Objective**: Teams as a second channel for the same engine.
-- **Tasks**: Azure Bot resource + app identity; Teams SDK adapter at `/api/messages`; user/conversation mapping; Adaptive Cards for contradictions and summary; deep links to web; proactive nudges; Teams app manifest via Agents Toolkit; admin-deployed app.
-- **Dependencies**: Pilot running on web; Teams admin approval.
-- **Acceptance**: a user starts an interview in Teams, continues it on web (and vice versa); summary confirm works via card; no agent logic duplicated in the adapter.
+### Phase 7 — Proof-of-concept chat interface (replaces Teams; changed 2026-10-03)
+- **Objective**: a temporary, standalone chat interface to prove the conversational concept with real users before choosing the production channel.
+- **Tasks**: full-screen chat at `/chat` with no app chrome or map (what a messaging channel would feel like): conversation list, start/continue/pause, streamed replies, summary confirmation; built only on the channel-agnostic interview API (`/api/v1/interviews/*`), so whatever channel is chosen later reuses the same engine; collect PoC feedback (time-to-map, accuracy, drop-off).
+- **Dependencies**: Phase 2 interview engine; an LLM API key.
+- **Acceptance**: a pilot user maps a process end to end in `/chat` alone; the result appears in the Process Library; no agent logic in the chat UI.
+
+### Phase 8 — Production channel (decided after the PoC)
+- **Objective**: put the chat where users are, once the PoC proves value. Options include Microsoft Teams (see §7, kept as a reference design), the web app, or another channel.
+- **Dependencies**: PoC outcome and the owner's channel decision.
 
 ---
 
@@ -715,7 +719,8 @@ Each step leaves the app working; tests added with each step.
 32. Dockerfile, Azure infrastructure, CI pipeline, deploy to a pilot environment.
 33. Security review, Playwright smoke tests, eval run with real SOPs, fixes.
 34. Pilot with Procurement champions.
-35. (Phase 7) Teams adapter.
+35. (Phase 7) Proof-of-concept chat interface at `/chat`.
+36. (Phase 8) Production channel adapter, once the channel is chosen.
 
 ---
 
@@ -752,7 +757,7 @@ See §10 (14 criteria).
 2. **Component library**: shadcn/ui (recommended) vs Fluent UI v9 (Teams/M365 look).
 3. **Lifecycle**: Draft → Under Validation → Validated → Archived (drop "AI Generated" as a state; defer "Approved") — or keep a separate admin Approved step?
 4. **Roles**: `user` + `admin` app roles stored in our DB, plus per-process owner; defer Reviewer. (Alternative: Entra app roles managed by IT.)
-5. **Teams in Phase 7** (after the web pilot), with IT approvals started now.
+5. ~~Teams in Phase 7~~ → **Superseded 2026-10-03**: temporary PoC chat interface first; production channel decided after the PoC.
 6. **LLM provider for pilot**: Azure OpenAI (recommended) or OpenAI API — and is it approved for Procurement documents?
 7. **To-Be generation deferred**; MVP shows issues & opportunities only.
 8. **Hosting**: Azure Container Apps + Postgres Flexible Server (confirm your organisation's Azure standard).

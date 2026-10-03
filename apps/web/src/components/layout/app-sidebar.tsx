@@ -4,6 +4,7 @@ import {
   FolderTree,
   Home,
   LogOut,
+  MessageCircle,
   MessagesSquare,
   Settings,
   type LucideIcon,
@@ -40,6 +41,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { to: '/', label: 'Home', icon: Home },
   { to: '/interviews', label: 'Interviews', icon: MessagesSquare },
+  { to: '/chat', label: 'Chat (preview)', icon: MessageCircle },
   { to: '/library', label: 'Process Library', icon: FolderTree },
   { to: '/knowledge', label: 'Knowledge', icon: BookOpen },
   { to: '/admin', label: 'Admin', icon: Settings, adminOnly: true },

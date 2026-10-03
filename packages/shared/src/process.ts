@@ -200,3 +200,32 @@ export const ProcessListQuery = z.object({
   status: VersionStatus.optional(),
 });
 export type ProcessListQuery = z.infer<typeof ProcessListQuery>;
+
+// ---- Interviews ----
+
+export const interviewStages = [
+  'scoping',
+  'happy_path',
+  'step_detail',
+  'branches_exceptions',
+  'rules_controls_pain',
+  'summary',
+  'completed',
+] as const;
+export const InterviewStage = z.enum(interviewStages);
+export type InterviewStage = z.infer<typeof InterviewStage>;
+
+export const interviewStatuses = ['active', 'paused', 'completed', 'abandoned'] as const;
+export const InterviewStatus = z.enum(interviewStatuses);
+export type InterviewStatus = z.infer<typeof InterviewStatus>;
+
+export const openItemTypes = ['missing_info', 'question', 'ambiguity', 'contradiction', 'assumption'] as const;
+export const OpenItemType = z.enum(openItemTypes);
+export type OpenItemType = z.infer<typeof OpenItemType>;
+
+export const openItemStatuses = ['open', 'asked', 'resolved', 'dismissed'] as const;
+export const OpenItemStatus = z.enum(openItemStatuses);
+export type OpenItemStatus = z.infer<typeof OpenItemStatus>;
+
+export const channels = ['web', 'teams'] as const;
+export const Channel = z.enum(channels);

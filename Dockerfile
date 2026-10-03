@@ -10,6 +10,7 @@ FROM base AS build
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
 COPY apps/api/package.json apps/api/
 COPY apps/web/package.json apps/web/
+COPY packages/agent/package.json packages/agent/
 COPY packages/db/package.json packages/db/
 COPY packages/diagram/package.json packages/diagram/
 COPY packages/shared/package.json packages/shared/

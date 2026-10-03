@@ -1,6 +1,7 @@
 import { MessageSquarePlus } from 'lucide-react';
 import { useAuth } from '@/auth/auth';
 import { PageHeader } from '@/components/page-header';
+import { StartInterviewDialog } from '@/features/interviews/start-interview-dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -14,10 +15,14 @@ export function HomePage() {
         title={`Welcome, ${firstName}`}
         description="Map how work really happens, and keep it in one place."
         actions={
-          <Button disabled title="Available in Phase 2">
-            <MessageSquarePlus />
-            Map a process
-          </Button>
+          <StartInterviewDialog
+            trigger={
+              <Button>
+                <MessageSquarePlus />
+                Map a process
+              </Button>
+            }
+          />
         }
       />
       <div className="grid gap-4 md:grid-cols-3">

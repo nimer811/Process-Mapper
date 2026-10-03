@@ -7,8 +7,8 @@ import type {
   VersionStatus,
 } from '@process-ai/shared';
 import type { Db } from './client.js';
+import { upsertActor, upsertSystem } from './catalog.js';
 import {
-  actors,
   businessRules,
   departments,
   evidence,
@@ -17,7 +17,6 @@ import {
   processSteps,
   processVersions,
   stepSystems,
-  systems,
   users,
   validationEvents,
 } from './schema/index.js';
@@ -54,8 +53,6 @@ interface ProcessSpec {
   steps: StepSpec[];
   edges: [from: string, to: string, type?: EdgeType, label?: string][];
 }
-
-const normalize = (s: string) => s.trim().toLowerCase().replace(/\s+/g, ' ');
 
 const evidenceSourceFor = {
   stated: 'user_statement',
@@ -296,20 +293,6 @@ const prToPo: ProcessSpec = {
   ],
 };
 
-async function upsertActor(db: Db, name: string, kind: 'role' | 'team' | 'external', departmentId: string) {
-  const normalizedName = normalize(name);
-  await db.insert(actors).values({ name, normalizedName, kind, departmentId }).onConflictDoNothing();
-  const row = await db.query.actors.findFirst({ where: eq(actors.normalizedName, normalizedName) });
-  return row!.id;
-}
-
-async function upsertSystem(db: Db, name: string) {
-  const normalizedName = normalize(name);
-  await db.insert(systems).values({ name, normalizedName }).onConflictDoNothing();
-  const row = await db.query.systems.findFirst({ where: eq(systems.normalizedName, normalizedName) });
-  return row!.id;
-}
-
 async function createProcess(
   db: Db,
   spec: ProcessSpec,
@@ -362,7 +345,7 @@ async function createProcess(
     for (const [i, s] of spec.steps.entries()) {
       const prov = s.provenance ?? (isValidated ? 'confirmed' : 'stated');
       const actorId = s.actor
-        ? await upsertActor(t, s.actor, s.actorKind ?? 'role', ctx.departmentId)
+        ? await upsertActor(t, s.actor, { kind: s.actorKind ?? 'role', departmentId: ctx.departmentId })
         : null;
       const [step] = await tx
         .insert(processSteps)

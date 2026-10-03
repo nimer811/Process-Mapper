@@ -20,11 +20,13 @@ export function registerErrorHandling(app: FastifyInstance) {
     }
 
     const status = error.statusCode && error.statusCode >= 400 ? error.statusCode : 500;
-    if (status >= 500) request.log.error({ err: error }, 'Unhandled error');
+    if (status >= 500 && status !== 503) request.log.error({ err: error }, 'Unhandled error');
 
+    // Unexpected failures stay opaque; deliberate "service unavailable" errors keep their message.
+    const opaque = status >= 500 && status !== 503;
     const body: ProblemDetails = {
       type: 'about:blank',
-      title: status >= 500 ? 'Internal Server Error' : error.message,
+      title: opaque ? 'Internal Server Error' : error.message,
       status,
       instance: request.url,
     };

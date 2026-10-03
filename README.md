@@ -10,8 +10,10 @@ Internal AI agent that interviews employees about how a business process works, 
 pnpm monorepo · React + Vite + shadcn/ui · Fastify · PostgreSQL 17 + pgvector · Drizzle ORM · Docker (single image for Azure Container Apps).
 
 ```
-apps/web          React SPA
+apps/web          React SPA (full app + /chat proof-of-concept chat)
 apps/api          Fastify API (serves the built SPA in production)
+packages/agent    Channel-agnostic AI interview engine + LLM gateway (OpenAI / Azure OpenAI)
+packages/diagram  Process map layout and rendering (web map, SVG and PDF exports)
 packages/db       Drizzle schema, migrations, seed
 packages/shared   zod schemas and types shared by web and api
 ```
@@ -34,6 +36,22 @@ pnpm dev                    # API on :3000, web on http://localhost:5173
 ```
 
 Sign in by picking a seeded user (dev auth). Microsoft Entra ID replaces this in Phase 6.
+
+## AI interviewer
+
+Set these in `.env` (never commit it):
+
+```
+LLM_PROVIDER=openai
+LLM_API_KEY=sk-...
+LLM_CHAT_MODEL=gpt-5.4-mini      # any model your key can use
+LLM_EXTRACTION_MODEL=            # optional: a stronger model for structured extraction
+```
+
+Then map a process from **Interviews** (chat + live map) or the full-screen proof-of-concept chat at **/chat**.
+
+No key? `pnpm --filter @process-ai/api dev:mock-ai` runs the API with a rule-based **mock** interviewer
+(clearly marked "[Mock AI]") so you can work on the UI. Use it instead of the API in `pnpm dev`.
 
 ## Run the production image locally
 

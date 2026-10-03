@@ -30,3 +30,8 @@ See §2, §11 and "Decisions that need your approval" in the build plan.
 ## Follow-up (2026-10-03)
 - **Temporary LLM provider: OpenAI API** (`LLM_PROVIDER=openai`), used for both chat and embeddings. Azure OpenAI remains the target; switching is configuration only.
 - **No Azure/Entra IT requests for the pilot.** The pilot runs on the local Docker setup with dev sign-in. Consequence: dev sign-in lets anyone who can reach the app choose any user, so the pilot must stay on a trusted machine/network until Entra ID (Phase 6) is in place.
+
+## Change (2026-10-03): PoC chat instead of Teams
+- **Teams integration is removed from the schedule.** Phase 7 is now a temporary, standalone chat interface (`/chat`) to prove the concept with real users.
+- **The production channel is decided after the PoC** (Phase 8). Teams remains a documented option (build plan §7).
+- Consequence: no bot registration, Azure Bot or Teams app work for now. The interview engine and API stay channel-agnostic, so the chosen channel is an adapter over the same `/api/v1/interviews` endpoints.

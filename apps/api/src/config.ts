@@ -20,6 +20,13 @@ const ConfigSchema = z
     /** Directory of the built SPA; when set, the API serves it. */
     WEB_DIST_DIR: z.string().optional(),
     CORS_ORIGIN: z.string().optional(),
+    LLM_PROVIDER: z.enum(['openai', 'azure']).default('openai'),
+    LLM_API_KEY: z.string().optional(),
+    LLM_CHAT_MODEL: z.string().default('gpt-5.4-mini'),
+    /** Optional separate model for structured extraction (defaults to the chat model). */
+    LLM_EXTRACTION_MODEL: z.string().optional(),
+    AZURE_OPENAI_RESOURCE_NAME: z.string().optional(),
+    AZURE_OPENAI_API_VERSION: z.string().optional(),
   })
   .superRefine((c, ctx) => {
     if (c.NODE_ENV === 'production' && c.AUTH_MODE === 'dev' && !c.ALLOW_DEV_AUTH) {

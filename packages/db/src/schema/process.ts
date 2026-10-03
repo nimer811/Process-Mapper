@@ -1,5 +1,6 @@
 import {
   type AnyPgColumn,
+  boolean,
   index,
   integer,
   numeric,
@@ -92,6 +93,8 @@ export const processVersions = pgTable(
     purpose: text(),
     trigger: text(),
     endCondition: text(),
+    /** Owner as described in interviews (role/title); the accountable user is processes.owner_user_id. */
+    ownerRole: text(),
     frequency: text(),
     volume: text(),
     scopeNotes: text(),
@@ -132,6 +135,8 @@ export const processSteps = pgTable(
     sla: text(),
     approvalAuthority: text(),
     painPoints: text().array().notNull().default([]),
+    /** Interviewee said there is no system for this step (so don't keep asking). */
+    noSystem: boolean().notNull().default(false),
     provenance: provenance().notNull().default('stated'),
     confidence: numeric({ precision: 3, scale: 2, mode: 'number' }),
     ...timestamps,
@@ -220,6 +225,8 @@ export const evidence = pgTable(
     entityId: uuid().notNull(),
     field: text(),
     sourceType: evidenceSource().notNull(),
+    /** Interview message the fact came from (FK added in migration to avoid a schema import cycle). */
+    messageId: uuid(),
     quote: text(),
     providedBy: uuid().references(() => users.id),
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),

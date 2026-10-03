@@ -1,10 +1,11 @@
 import { DEV_USER_HEADER, type DevUser } from '@process-ai/shared';
+import type { LlmGateway } from '@process-ai/agent';
 import { buildApp } from '../src/app.js';
 import { loadConfig } from '../src/config.js';
 import { startTestDb } from './setup-db.js';
 
 /** Boots the API against a fresh test database and resolves seeded users by email. */
-export async function startTestApp() {
+export async function startTestApp(opts: { llm?: LlmGateway | null } = {}) {
   const testDb = await startTestDb();
   const config = loadConfig({
     NODE_ENV: 'test',
@@ -12,7 +13,7 @@ export async function startTestApp() {
     AUTH_MODE: 'dev',
     LOG_LEVEL: 'fatal',
   });
-  const app = await buildApp({ config, db: testDb.db });
+  const app = await buildApp({ config, db: testDb.db, llm: opts.llm ?? null });
   const devUsers = (
     await app.inject({ method: 'GET', url: '/api/v1/auth/dev-users' })
   ).json<DevUser[]>();
