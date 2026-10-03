@@ -1,0 +1,42 @@
+import { Link } from 'react-router';
+import { BookOpen, Building2, ClipboardCheck, MessagesSquare, ScrollText, Users } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
+import { PageHeader } from '@/components/page-header';
+import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+
+const sections: { title: string; description: string; icon: LucideIcon; to?: string; phase?: string }[] = [
+  { title: 'Departments', description: 'Create and organise departments.', icon: Building2, to: '/admin/departments' },
+  { title: 'Knowledge bases', description: 'Upload SOPs, policies and approval matrices.', icon: BookOpen, phase: 'Phase 3' },
+  { title: 'Interview sessions', description: 'Review AI interview transcripts.', icon: MessagesSquare, phase: 'Phase 2' },
+  { title: 'Approvals', description: 'Approve or archive validated processes.', icon: ClipboardCheck, phase: 'Phase 4' },
+  { title: 'Users and owners', description: 'Roles and process ownership.', icon: Users, phase: 'Phase 6' },
+  { title: 'Audit log', description: 'Who changed what, and when.', icon: ScrollText, phase: 'Phase 6' },
+];
+
+export function AdminPage() {
+  return (
+    <>
+      <PageHeader title="Admin" description="Manage departments, knowledge and process governance." />
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {sections.map((s) => {
+          const card = (
+            <Card className={s.to ? 'hover:border-foreground/30 h-full transition-colors' : 'h-full opacity-60'}>
+              <CardHeader>
+                <s.icon className="text-muted-foreground mb-2 size-5" />
+                <CardTitle className="text-base">{s.title}</CardTitle>
+                <CardDescription>{s.phase ? `${s.description} Coming in ${s.phase}.` : s.description}</CardDescription>
+              </CardHeader>
+            </Card>
+          );
+          return s.to ? (
+            <Link key={s.title} to={s.to}>
+              {card}
+            </Link>
+          ) : (
+            <div key={s.title}>{card}</div>
+          );
+        })}
+      </div>
+    </>
+  );
+}

@@ -1,4 +1,4 @@
-import { createDb, runMigrations, seed } from '@process-ai/db';
+import { createDb, runMigrations, seed, seedDemo } from '@process-ai/db';
 import { buildApp } from './app.js';
 import { loadConfig } from './config.js';
 
@@ -7,6 +7,7 @@ const { db, pool } = createDb(config.DATABASE_URL);
 
 if (config.MIGRATE_ON_START) await runMigrations(db, config.MIGRATIONS_DIR);
 if (config.SEED_ON_START) await seed(db);
+if (config.SEED_ON_START && config.SEED_DEMO_ON_START) await seedDemo(db);
 
 const app = await buildApp({ config, db });
 

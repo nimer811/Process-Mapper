@@ -37,6 +37,7 @@ services:
       ALLOW_DEV_AUTH: 'true' # local only — Entra ID replaces this in Phase 6
       MIGRATE_ON_START: 'true'
       SEED_ON_START: 'true'
+      SEED_DEMO_ON_START: 'true' # demo processes; set to 'false' for the real pilot data
       LOG_LEVEL: info
     volumes:
       - storage:/app/storage

@@ -128,3 +128,14 @@
     @apply font-sans;
     }
 }
+/* Process map edge colours */
+:root {
+  --edge-default: oklch(0.55 0.02 260);
+  --edge-exception: oklch(0.6 0.2 25);
+  --edge-loop: oklch(0.6 0.13 240);
+}
+.dark {
+  --edge-default: oklch(0.7 0.02 260);
+  --edge-exception: oklch(0.7 0.17 25);
+  --edge-loop: oklch(0.72 0.11 240);
+}

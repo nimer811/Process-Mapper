@@ -21,6 +21,23 @@ Move resolved notes to `docs/notes/` or `docs/decisions/` once they are settled.
 
 -->
 
+## 2026-10-03 — Phase 1 (Process Library & Map) complete
+
+**Done:**
+- Process schema (migration `0001_process_model`): processes, versions (draft → under_validation → validated → approved → archived), steps, typed edges, business rules, actors/systems catalogues, evidence, validation events
+- Demo seed (`seedDemo`): approved branching Vendor Onboarding (15 steps, decision/approval/exception/loop-back) + draft PR-to-PO. Docker seeds it via `SEED_DEMO_ON_START` — set to `false` before loading real pilot data
+- API: departments (admin create/edit with audit), processes list/search/filter, process detail, version graph; draft visibility limited to admin/owner/creator
+- Web: Library, Department, Process Detail (header + 6 tabs), React Flow map with ELK layout and ELK-routed edges, step side panel, Details/Versions tabs, Admin → Departments
+- Replaced next-themes with a small system-theme hook (React 19 script warning)
+- Tests: 14 API + 4 web, all green; screenshots verified
+
+**Still open:**
+- Add OpenAI key to `.env` (`LLM_API_KEY`) before Phase 2
+- Issues / Automation / Documents tabs are placeholders until Phases 5 / 5 / 3
+- Map: swimlanes and BPMN export deferred
+
+**Next:** Phase 2 — AI interview engine (web)
+
 ## 2026-10-03 — Plan approved, Phase 0 (Foundation) complete
 
 **Done:**

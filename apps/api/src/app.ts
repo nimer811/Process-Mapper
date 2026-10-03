@@ -15,6 +15,8 @@ import { registerErrorHandling } from './plugins/errors.js';
 import { authPlugin } from './plugins/auth.js';
 import { healthRoutes } from './modules/health/routes.js';
 import { authRoutes } from './modules/auth/routes.js';
+import { departmentRoutes } from './modules/departments/routes.js';
+import { processRoutes } from './modules/processes/routes.js';
 
 export interface AppDeps {
   config: Config;
@@ -44,6 +46,8 @@ export async function buildApp({ config, db }: AppDeps, opts: FastifyServerOptio
   await app.register(
     async (api) => {
       await api.register(authRoutes, { db, config });
+      await api.register(departmentRoutes, { db });
+      await api.register(processRoutes, { db });
     },
     { prefix: '/api/v1' },
   );

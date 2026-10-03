@@ -4,6 +4,11 @@ import { RequireAuth, RequireRole } from '@/auth/guards';
 import { LoginPage } from '@/pages/login-page';
 import { HomePage } from '@/pages/home-page';
 import { PlaceholderPage } from '@/pages/placeholder-page';
+import { LibraryPage } from '@/pages/library-page';
+import { DepartmentPage } from '@/pages/department-page';
+import { ProcessPage } from '@/pages/process-page';
+import { AdminPage } from '@/pages/admin/admin-page';
+import { DepartmentsAdminPage } from '@/pages/admin/departments-page';
 
 export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
@@ -24,16 +29,9 @@ export const router = createBrowserRouter([
               />
             ),
           },
-          {
-            path: 'library',
-            element: (
-              <PlaceholderPage
-                title="Process Library"
-                description="Browse processes by department."
-                phase="Phase 1"
-              />
-            ),
-          },
+          { path: 'library', element: <LibraryPage /> },
+          { path: 'library/:departmentSlug', element: <DepartmentPage /> },
+          { path: 'processes/:processId', element: <ProcessPage /> },
           {
             path: 'knowledge',
             element: (
@@ -47,16 +45,8 @@ export const router = createBrowserRouter([
           {
             element: <RequireRole role="admin" />,
             children: [
-              {
-                path: 'admin',
-                element: (
-                  <PlaceholderPage
-                    title="Admin"
-                    description="Departments, knowledge bases, users and process governance."
-                    phase="Phases 1–6"
-                  />
-                ),
-              },
+              { path: 'admin', element: <AdminPage /> },
+              { path: 'admin/departments', element: <DepartmentsAdminPage /> },
             ],
           },
         ],

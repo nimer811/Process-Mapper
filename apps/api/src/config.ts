@@ -15,6 +15,8 @@ const ConfigSchema = z
     MIGRATIONS_DIR: z.string().optional(),
     /** Seed pilot department and dev users on startup (dev/local Docker only). */
     SEED_ON_START: z.stringbool().default(false),
+    /** Also seed demo processes (Vendor Onboarding etc.). Never for the real pilot database. */
+    SEED_DEMO_ON_START: z.stringbool().default(false),
     /** Directory of the built SPA; when set, the API serves it. */
     WEB_DIST_DIR: z.string().optional(),
     CORS_ORIGIN: z.string().optional(),
