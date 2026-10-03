@@ -239,7 +239,10 @@ function mapPage(doc: Doc, { scene }: PackInput) {
 
   // Wide process: tile it across detail pages at a readable scale (larger when the page height
   // allows), spreading the tiles evenly so the last page isn't mostly empty.
-  const detailScale = Math.min(MAX_DETAIL_SCALE, Math.max(READABLE_SCALE, overview.height / scene.height));
+  const detailScale = Math.min(
+    MAX_DETAIL_SCALE,
+    Math.max(READABLE_SCALE, overview.height / scene.height),
+  );
   const sliceWidth = overview.width / detailScale;
   const parts = Math.ceil((scene.width - TILE_OVERLAP) / (sliceWidth - TILE_OVERLAP));
   const step = parts > 1 ? (scene.width - sliceWidth) / (parts - 1) : 0;
@@ -247,13 +250,22 @@ function mapPage(doc: Doc, { scene }: PackInput) {
     .font('Helvetica')
     .fontSize(9)
     .fillColor(C.muted)
-    .text(`Overview of the whole process. Detail follows on the next ${parts} pages.`, MARGIN, overview.y - 4, {
-      lineBreak: false,
-    });
+    .text(
+      `Overview of the whole process. Detail follows on the next ${parts} pages.`,
+      MARGIN,
+      overview.y - 4,
+      {
+        lineBreak: false,
+      },
+    );
 
   for (let i = 0; i < parts; i++) {
     newPage(doc, A3_LANDSCAPE);
-    doc.font('Helvetica-Bold').fontSize(14).fillColor(C.text).text(`Process map — part ${i + 1} of ${parts}`);
+    doc
+      .font('Helvetica-Bold')
+      .fontSize(14)
+      .fillColor(C.text)
+      .text(`Process map — part ${i + 1} of ${parts}`);
     const detail = box(doc.y + 8);
     drawSceneSlice(doc, scene, detail, i * step, detailScale);
     legend(doc, MARGIN, pageH - MARGIN - legendHeight + 10);

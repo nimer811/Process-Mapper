@@ -31,8 +31,8 @@ export function LoginPage() {
           </div>
           <CardTitle>Sign in</CardTitle>
           <CardDescription>
-            Development mode: choose a seeded user. Microsoft Entra ID sign-in replaces this in
-            the pilot environment.
+            Development mode: choose a seeded user. Microsoft Entra ID sign-in replaces this in the
+            pilot environment.
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-2">

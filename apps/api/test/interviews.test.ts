@@ -1,7 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { and, eq } from 'drizzle-orm';
 import { MockGateway } from '@process-ai/agent';
-import { evidence, interviewSessions, processSteps } from '@process-ai/db';
+import { and, eq, evidence, interviewSessions, processSteps } from '@process-ai/db';
 import type {
   Department,
   InterviewDetail,

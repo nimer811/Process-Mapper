@@ -1,4 +1,4 @@
-import { sql } from 'drizzle-orm';
+import { sql } from '@process-ai/db';
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import type { Db } from '@process-ai/db';
 

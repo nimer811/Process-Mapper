@@ -66,7 +66,9 @@ export async function exportDepartmentPack(db: Db, user: CurrentUser, department
   }
   // Byte-order mark so Excel opens the CSV as UTF-8.
   const BOM = String.fromCharCode(0xfeff);
-  files['index.csv'] = strToU8(`${BOM}${index.map((r) => r.map(csvCell).join(',')).join('\r\n')}\r\n`);
+  files['index.csv'] = strToU8(
+    `${BOM}${index.map((r) => r.map(csvCell).join(',')).join('\r\n')}\r\n`,
+  );
 
   const date = generatedAt.toISOString().slice(0, 10);
   return {

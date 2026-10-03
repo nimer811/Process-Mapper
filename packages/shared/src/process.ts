@@ -229,3 +229,26 @@ export type OpenItemStatus = z.infer<typeof OpenItemStatus>;
 
 export const channels = ['web', 'teams'] as const;
 export const Channel = z.enum(channels);
+
+// ---- Knowledge base ----
+
+export const documentCategories = ['sop', 'policy', 'doa', 'approval_matrix', 'form', 'checklist', 'other'] as const;
+export const DocumentCategory = z.enum(documentCategories);
+export type DocumentCategory = z.infer<typeof DocumentCategory>;
+
+export const documentCategoryLabels: Record<DocumentCategory, string> = {
+  sop: 'SOP',
+  policy: 'Policy',
+  doa: 'Delegation of authority',
+  approval_matrix: 'Approval matrix',
+  form: 'Form',
+  checklist: 'Checklist',
+  other: 'Other',
+};
+
+export const documentStatuses = ['pending', 'processing', 'ready', 'failed'] as const;
+export const DocumentStatus = z.enum(documentStatuses);
+export type DocumentStatus = z.infer<typeof DocumentStatus>;
+
+/** Embedding size of the configured embedding model (text-embedding-3-small). Changing it needs a migration. */
+export const EMBEDDING_DIMENSIONS = 1536;

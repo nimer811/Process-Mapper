@@ -24,7 +24,7 @@ export interface InterviewState {
     turnCount: number;
     stageEnteredTurn: number;
   };
-  process: { name: string; departmentName: string; isUntitled: boolean };
+  process: { name: string; departmentId: string; departmentName: string; isUntitled: boolean };
   version: {
     description: string | null;
     purpose: string | null;
@@ -83,6 +83,21 @@ export interface OpenItemState {
   status: OpenItemStatus;
   timesAsked: number;
   lastAskedTurn: number | null;
+  /** Reference document behind the item (e.g. the SOP a contradiction is about). */
+  citation?: Citation | null;
+}
+
+export interface Citation {
+  chunkId: string;
+  documentId: string;
+  /** Human reference, e.g. "Procurement Policy, 4.2 Finance review". */
+  label: string;
+}
+
+/** A reference passage retrieved for this turn, labelled D1, D2, ... for the model. */
+export interface ReferenceDoc extends Citation {
+  docLabel: string;
+  content: string;
 }
 
 export const STAGE_ORDER: InterviewStage[] = [

@@ -29,7 +29,10 @@ export function StatusBadge({ status }: { status: VersionStatus }) {
   );
 }
 
-export const provenanceMeta: Record<Provenance, { label: string; hint: string; className: string }> = {
+export const provenanceMeta: Record<
+  Provenance,
+  { label: string; hint: string; className: string }
+> = {
   stated: {
     label: 'Stated',
     hint: 'Described by an employee; not yet validated.',
@@ -43,7 +46,8 @@ export const provenanceMeta: Record<Provenance, { label: string; hint: string; c
   inferred: {
     label: 'AI inferred',
     hint: 'Deduced by the AI. Not confirmed by anyone yet.',
-    className: 'border-dashed border-amber-400 text-amber-800 dark:border-amber-700 dark:text-amber-300',
+    className:
+      'border-dashed border-amber-400 text-amber-800 dark:border-amber-700 dark:text-amber-300',
   },
   confirmed: {
     label: 'Confirmed',

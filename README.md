@@ -13,6 +13,7 @@ pnpm monorepo · React + Vite + shadcn/ui · Fastify · PostgreSQL 17 + pgvector
 apps/web          React SPA (full app + /chat proof-of-concept chat)
 apps/api          Fastify API (serves the built SPA in production)
 packages/agent    Channel-agnostic AI interview engine + LLM gateway (OpenAI / Azure OpenAI)
+packages/knowledge  Document checks, parsing (PDF/DOCX/XLSX/TXT), chunking, storage, hybrid search
 packages/diagram  Process map layout and rendering (web map, SVG and PDF exports)
 packages/db       Drizzle schema, migrations, seed
 packages/shared   zod schemas and types shared by web and api
@@ -52,6 +53,15 @@ Then map a process from **Interviews** (chat + live map) or the full-screen proo
 
 No key? `pnpm --filter @process-ai/api dev:mock-ai` runs the API with a rule-based **mock** interviewer
 (clearly marked "[Mock AI]") so you can work on the UI. Use it instead of the API in `pnpm dev`.
+
+## Knowledge base (SOPs)
+
+Admin → **Knowledge bases** → create one (e.g. "Procurement", linked to the department) → upload PDF, DOCX, XLSX or TXT files with a category.
+Files are checked by content, stored under `STORAGE_DIR` (a Docker volume), then indexed in the background (pg-boss queue in Postgres):
+text is split by section/sheet row, embedded with `LLM_EMBEDDING_MODEL`, and stored in pgvector. The interviewer retrieves relevant passages
+each turn, records SOP rules as "From SOP", and asks about contradictions with a citation.
+
+Note: every API instance connected to a database also runs its indexing worker, so all instances must share the same file store.
 
 ## Run the production image locally
 

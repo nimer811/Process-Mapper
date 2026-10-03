@@ -1,5 +1,9 @@
 import { DEV_USER_HEADER, type DevUser } from '@process-ai/shared';
+import { mkdtemp } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
 import type { LlmGateway } from '@process-ai/agent';
+import { LocalFileStore } from '@process-ai/knowledge';
 import { buildApp } from '../src/app.js';
 import { loadConfig } from '../src/config.js';
 import { startTestDb } from './setup-db.js';
@@ -13,10 +17,11 @@ export async function startTestApp(opts: { llm?: LlmGateway | null } = {}) {
     AUTH_MODE: 'dev',
     LOG_LEVEL: 'fatal',
   });
-  const app = await buildApp({ config, db: testDb.db, llm: opts.llm ?? null });
-  const devUsers = (
-    await app.inject({ method: 'GET', url: '/api/v1/auth/dev-users' })
-  ).json<DevUser[]>();
+  const store = new LocalFileStore(await mkdtemp(path.join(tmpdir(), 'process-ai-test-')));
+  const app = await buildApp({ config, db: testDb.db, llm: opts.llm ?? null, store, jobs: 'inline' });
+  const devUsers = (await app.inject({ method: 'GET', url: '/api/v1/auth/dev-users' })).json<
+    DevUser[]
+  >();
 
   const as = (email: string) => {
     const user = devUsers.find((u) => u.email === email);

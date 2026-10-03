@@ -17,12 +17,18 @@ export function LibraryPage() {
   const filtered = !!(query.q || query.status);
 
   const groups = (departments.data ?? [])
-    .map((d) => ({ department: d, items: (processes.data ?? []).filter((p) => p.department.id === d.id) }))
+    .map((d) => ({
+      department: d,
+      items: (processes.data ?? []).filter((p) => p.department.id === d.id),
+    }))
     .filter((g) => g.items.length > 0 || (!filtered && g.department.processCount > 0));
 
   return (
     <>
-      <PageHeader title="Process Library" description="Browse documented processes by department." />
+      <PageHeader
+        title="Process Library"
+        description="Browse documented processes by department."
+      />
       <ProcessFilters q={q} status={status} onChange={update} />
 
       {processes.isPending || departments.isPending ? (

@@ -34,7 +34,10 @@ export function ProcessMap({ graph, selectedStepId, onSelectStep }: ProcessMapPr
   const flow = useMemo(() => {
     if (!layout.data) return null;
     const { nodes, edges } = toFlow(graph, layout.data);
-    return { nodes: nodes.map((n): StepNode => ({ ...n, selected: n.id === selectedStepId })), edges };
+    return {
+      nodes: nodes.map((n): StepNode => ({ ...n, selected: n.id === selectedStepId })),
+      edges,
+    };
   }, [graph, layout.data, selectedStepId]);
 
   if (!flow) return <Skeleton className="h-full w-full" />;
@@ -45,7 +48,7 @@ export function ProcessMap({ graph, selectedStepId, onSelectStep }: ProcessMapPr
         nodes={flow.nodes}
         edges={flow.edges}
         nodeTypes={nodeTypes}
-      edgeTypes={edgeTypes}
+        edgeTypes={edgeTypes}
         colorMode={colorScheme}
         onInit={(instance) => openReadable(instance, containerRef.current)}
         nodesDraggable={false}

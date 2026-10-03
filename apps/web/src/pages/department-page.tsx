@@ -31,7 +31,9 @@ export function DepartmentPage() {
       <PageHeader
         title={department?.name ?? ''}
         description={department?.description ?? undefined}
-        actions={processes.data?.length ? <DepartmentPackButton departmentSlug={departmentSlug} /> : null}
+        actions={
+          processes.data?.length ? <DepartmentPackButton departmentSlug={departmentSlug} /> : null
+        }
       />
       <ProcessFilters q={q} status={status} onChange={update} />
       {processes.isPending ? (

@@ -50,7 +50,13 @@ export function DepartmentDialog({
   );
 }
 
-function DepartmentForm({ department, onDone }: { department: Department | null; onDone: () => void }) {
+function DepartmentForm({
+  department,
+  onDone,
+}: {
+  department: Department | null;
+  onDone: () => void;
+}) {
   const queryClient = useQueryClient();
   const [name, setName] = useState(department?.name ?? '');
   const [slug, setSlug] = useState(department?.slug ?? '');
@@ -62,7 +68,10 @@ function DepartmentForm({ department, onDone }: { department: Department | null;
   const save = useMutation({
     mutationFn: (body: DepartmentInput) =>
       department
-        ? api<Department>(`/departments/${department.id}`, { method: 'PATCH', body: JSON.stringify(body) })
+        ? api<Department>(`/departments/${department.id}`, {
+            method: 'PATCH',
+            body: JSON.stringify(body),
+          })
         : api<Department>('/departments', { method: 'POST', body: JSON.stringify(body) }),
     onSuccess: async (d) => {
       await queryClient.invalidateQueries({ queryKey: ['departments'] });
@@ -127,7 +136,9 @@ function DepartmentForm({ department, onDone }: { department: Department | null;
         {errors.slug ? (
           <p className="text-destructive text-sm">{errors.slug}</p>
         ) : (
-          <p className="text-muted-foreground text-xs">Used in links, e.g. /library/{slug || 'procurement'}</p>
+          <p className="text-muted-foreground text-xs">
+            Used in links, e.g. /library/{slug || 'procurement'}
+          </p>
         )}
       </div>
 

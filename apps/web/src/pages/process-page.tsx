@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router';
-import { FileText, Lightbulb, TriangleAlert } from 'lucide-react';
+import { Lightbulb, TriangleAlert } from 'lucide-react';
 import type { ProcessDetail, VersionGraph } from '@process-ai/shared';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
@@ -27,6 +27,7 @@ import { StepPanel } from '@/features/process-map/step-panel';
 import { StepTable, RulesList } from '@/features/processes/process-details';
 import { VersionsTable } from '@/features/processes/versions-table';
 import { ProcessDownloadMenu } from '@/features/processes/download-actions';
+import { ProcessDocuments } from '@/features/knowledge/process-documents';
 
 export function ProcessPage() {
   const { processId = '' } = useParams();
@@ -80,7 +81,11 @@ export function ProcessPage() {
 
         <TabsContent value="map">
           <Card className="h-[70vh] min-h-[480px] overflow-hidden py-0">
-            <ProcessMap graph={g} selectedStepId={selectedStepId} onSelectStep={setSelectedStepId} />
+            <ProcessMap
+              graph={g}
+              selectedStepId={selectedStepId}
+              onSelectStep={setSelectedStepId}
+            />
           </Card>
         </TabsContent>
 
@@ -108,11 +113,7 @@ export function ProcessPage() {
           />
         </TabsContent>
         <TabsContent value="documents">
-          <Placeholder
-            icon={<FileText />}
-            title="Documents"
-            text="SOPs and policies linked to this process appear here once the knowledge base is built (Phase 3)."
-          />
+          <ProcessDocuments processId={p.id} />
         </TabsContent>
         <TabsContent value="versions">
           <Card className="py-0">

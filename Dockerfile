@@ -10,16 +10,19 @@ FROM base AS build
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
 COPY apps/api/package.json apps/api/
 COPY apps/web/package.json apps/web/
+COPY vendor/ vendor/
 COPY packages/agent/package.json packages/agent/
+COPY packages/knowledge/package.json packages/knowledge/
 COPY packages/db/package.json packages/db/
 COPY packages/diagram/package.json packages/diagram/
 COPY packages/shared/package.json packages/shared/
 # Keep in sync with workspace packages (dependency layer is cached separately from source).
 RUN pnpm install --frozen-lockfile
 COPY . .
+# Flat (hoisted) production node_modules so the bundled workspace code can resolve its packages.
 RUN pnpm --filter @process-ai/web build \
  && pnpm --filter @process-ai/api build \
- && pnpm --filter @process-ai/api deploy --prod --legacy /out
+ && pnpm --filter @process-ai/api deploy --prod --legacy --config.node-linker=hoisted /out
 
 FROM node:22-alpine AS runtime
 ENV NODE_ENV=production \

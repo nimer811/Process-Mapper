@@ -1,6 +1,9 @@
 import { and, asc, desc, eq, inArray } from 'drizzle-orm';
+import { citationLabel } from '@process-ai/knowledge';
 import {
   actors,
+  documentChunks,
+  documents,
   businessRules,
   departments,
   interviewMessages,
@@ -47,8 +50,14 @@ export async function loadState(db: Db, sessionId: string): Promise<InterviewSta
     db.select().from(processEdges).where(eq(processEdges.versionId, v.id)),
     db.select().from(businessRules).where(eq(businessRules.versionId, v.id)),
     db
-      .select()
+      .select({
+        item: openItems,
+        chunk: { id: documentChunks.id, headingPath: documentChunks.headingPath, page: documentChunks.page, sheet: documentChunks.sheet },
+        doc: { id: documents.id, title: documents.title },
+      })
       .from(openItems)
+      .leftJoin(documentChunks, eq(documentChunks.id, openItems.chunkId))
+      .leftJoin(documents, eq(documents.id, documentChunks.documentId))
       .where(and(eq(openItems.sessionId, s.id), inArray(openItems.status, ['open', 'asked', 'resolved', 'dismissed'])))
       .orderBy(asc(openItems.createdAt)),
     db
@@ -73,7 +82,7 @@ export async function loadState(db: Db, sessionId: string): Promise<InterviewSta
       turnCount: s.turnCount,
       stageEnteredTurn: s.stageEnteredTurn,
     },
-    process: { name: p.name, departmentName: row.departmentName, isUntitled: p.name === UNTITLED },
+    process: { name: p.name, departmentId: p.departmentId, departmentName: row.departmentName, isUntitled: p.name === UNTITLED },
     version: {
       description: v.description,
       purpose: v.purpose,
@@ -110,7 +119,7 @@ export async function loadState(db: Db, sessionId: string): Promise<InterviewSta
       provenance: e.provenance,
     })),
     rules: rules.map((r) => ({ id: r.id, stepId: r.stepId, ruleType: r.ruleType, statement: r.statement, provenance: r.provenance })),
-    openItems: items.map((i) => ({
+    openItems: items.map(({ item: i, chunk, doc }) => ({
       id: i.id,
       type: i.type,
       gapKey: i.gapKey,
@@ -123,6 +132,10 @@ export async function loadState(db: Db, sessionId: string): Promise<InterviewSta
       status: i.status,
       timesAsked: i.timesAsked,
       lastAskedTurn: i.lastAskedTurn,
+      citation:
+        chunk?.id && doc?.id
+          ? { chunkId: chunk.id, documentId: doc.id, label: citationLabel({ documentTitle: doc.title, ...chunk }) }
+          : null,
     })),
     recentMessages: recent.reverse(),
   };

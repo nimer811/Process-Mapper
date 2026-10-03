@@ -20,19 +20,30 @@ import { getAccessibleSession, getInterviewDetail, listInterviews } from './serv
 
 const IdParams = z.object({ id: z.uuid() });
 
-export const interviewRoutes: FastifyPluginAsyncZod<{ db: Db; llm: LlmGateway | null }> = async (app, { db, llm }) => {
+export const interviewRoutes: FastifyPluginAsyncZod<{ db: Db; llm: LlmGateway | null }> = async (
+  app,
+  { db, llm },
+) => {
   const engine = llm ? new InterviewEngine(db, llm, app.log) : null;
 
-  const load = async (request: Parameters<typeof app.requireUser>[0], id: string, mustOwn: boolean) => {
+  const load = async (
+    request: Parameters<typeof app.requireUser>[0],
+    id: string,
+    mustOwn: boolean,
+  ) => {
     const user = app.requireUser(request);
     const found = await getAccessibleSession(db, user, id);
     if (!found) throw app.httpErrors.notFound('Interview not found');
-    if (mustOwn && !found.isOwner) throw app.httpErrors.forbidden('Only the person interviewed can continue this interview');
+    if (mustOwn && !found.isOwner)
+      throw app.httpErrors.forbidden('Only the person interviewed can continue this interview');
     return { user, ...found };
   };
 
   const requireEngine = () => {
-    if (!engine) throw app.httpErrors.serviceUnavailable('The AI interviewer is not configured. Set LLM_API_KEY.');
+    if (!engine)
+      throw app.httpErrors.serviceUnavailable(
+        'The AI interviewer is not configured. Set LLM_API_KEY.',
+      );
     return engine;
   };
 
@@ -45,13 +56,23 @@ export const interviewRoutes: FastifyPluginAsyncZod<{ db: Db; llm: LlmGateway | 
 
   app.get(
     '/interviews',
-    { schema: { querystring: z.object({ all: z.stringbool().optional() }), response: { 200: z.array(InterviewSummary) } } },
+    {
+      schema: {
+        querystring: z.object({ all: z.stringbool().optional() }),
+        response: { 200: z.array(InterviewSummary) },
+      },
+    },
     async (request) => listInterviews(db, app.requireUser(request), request.query.all ?? false),
   );
 
   app.post(
     '/interviews',
-    { schema: { body: StartInterviewInput, response: { 201: z.object({ interview: InterviewDetail }) } } },
+    {
+      schema: {
+        body: StartInterviewInput,
+        response: { 201: z.object({ interview: InterviewDetail }) },
+      },
+    },
     async (request, reply) => {
       const user = app.requireUser(request);
       const e = requireEngine();
@@ -82,7 +103,11 @@ export const interviewRoutes: FastifyPluginAsyncZod<{ db: Db; llm: LlmGateway | 
     async (request, reply) => {
       const { user } = await load(request, request.params.id, true);
       const e = requireEngine();
-      const events = e.postMessage({ sessionId: request.params.id, userId: user.id, text: request.body.text });
+      const events = e.postMessage({
+        sessionId: request.params.id,
+        userId: user.id,
+        text: request.body.text,
+      });
 
       // Pull the first event before committing to a stream, so busy/closed errors stay normal HTTP errors.
       let first: IteratorResult<InterviewStreamEvent>;
@@ -113,7 +138,10 @@ export const interviewRoutes: FastifyPluginAsyncZod<{ db: Db; llm: LlmGateway | 
         for await (const event of events as AsyncIterable<InterviewStreamEvent>) send(event);
       } catch (err) {
         request.log.error({ err }, 'Interview turn failed');
-        send({ type: 'error', message: 'Something went wrong while processing your message. Please try again.' });
+        send({
+          type: 'error',
+          message: 'Something went wrong while processing your message. Please try again.',
+        });
       } finally {
         res.end();
       }
@@ -144,7 +172,8 @@ export const interviewRoutes: FastifyPluginAsyncZod<{ db: Db; llm: LlmGateway | 
     { schema: { params: IdParams, response: { 200: InterviewMessage } } },
     async (request) => {
       const { summary } = await load(request, request.params.id, true);
-      if (summary.stage !== 'summary') throw app.httpErrors.conflict('Review the summary before completing the interview');
+      if (summary.stage !== 'summary')
+        throw app.httpErrors.conflict('Review the summary before completing the interview');
       return requireEngine().complete(request.params.id);
     },
   );

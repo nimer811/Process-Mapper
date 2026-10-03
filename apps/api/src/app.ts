@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import Fastify, { type FastifyInstance, type FastifyServerOptions } from 'fastify';
 import cors from '@fastify/cors';
+import multipart from '@fastify/multipart';
 import sensible from '@fastify/sensible';
 import fastifyStatic from '@fastify/static';
 import {
@@ -11,6 +12,10 @@ import {
 } from 'fastify-type-provider-zod';
 import type { Db } from '@process-ai/db';
 import { AiSdkGateway, type LlmGateway } from '@process-ai/agent';
+import { documents, eq } from '@process-ai/db';
+import { ingestDocument, LocalFileStore, type Embedder, type FileStore } from '@process-ai/knowledge';
+import { createInlineQueue, createPgBossQueue, type JobQueue } from './lib/jobs.js';
+import { knowledgeRoutes, UPLOAD_LIMITS } from './modules/knowledge/routes.js';
 import type { Config } from './config.js';
 import { registerErrorHandling } from './plugins/errors.js';
 import { authPlugin } from './plugins/auth.js';
@@ -26,6 +31,10 @@ export interface AppDeps {
   db: Db;
   /** Injected in tests; otherwise built from config (null when no API key is set). */
   llm?: LlmGateway | null;
+  /** Injected in tests; otherwise local disk at STORAGE_DIR. */
+  store?: FileStore;
+  /** "inline" runs indexing immediately (tests); default is the pg-boss queue. */
+  jobs?: 'inline' | 'pgboss';
 }
 
 export function llmFromConfig(config: Config): LlmGateway | null {
@@ -35,13 +44,15 @@ export function llmFromConfig(config: Config): LlmGateway | null {
     apiKey: config.LLM_API_KEY,
     chatModel: config.LLM_CHAT_MODEL,
     extractionModel: config.LLM_EXTRACTION_MODEL,
+    embeddingModel: config.LLM_EMBEDDING_MODEL,
     azureResourceName: config.AZURE_OPENAI_RESOURCE_NAME,
     azureApiVersion: config.AZURE_OPENAI_API_VERSION,
   });
 }
 
-export async function buildApp({ config, db, llm }: AppDeps, opts: FastifyServerOptions = {}) {
+export async function buildApp({ config, db, llm, store, jobs }: AppDeps, opts: FastifyServerOptions = {}) {
   const gateway = llm === undefined ? llmFromConfig(config) : llm;
+  const fileStore = store ?? new LocalFileStore(config.STORAGE_DIR);
   const app = Fastify({
     logger: {
       level: config.LOG_LEVEL,
@@ -56,6 +67,27 @@ export async function buildApp({ config, db, llm }: AppDeps, opts: FastifyServer
   app.setSerializerCompiler(serializerCompiler);
 
   await app.register(sensible);
+  await app.register(multipart, { limits: UPLOAD_LIMITS });
+
+  const embedder: Embedder | null = gateway;
+  const ingest = async (documentId: string) => {
+    if (!embedder) {
+      await db
+        .update(documents)
+        .set({ status: 'failed', error: 'The embedding model is not configured (LLM_API_KEY).' })
+        .where(eq(documents.id, documentId));
+      return;
+    }
+    try {
+      const result = await ingestDocument({ db, store: fileStore, embedder }, documentId);
+      app.log.info({ documentId, chunks: result?.chunks }, 'Document indexed');
+    } catch (err) {
+      app.log.warn({ err, documentId }, 'Document indexing failed');
+    }
+  };
+  const queue: JobQueue =
+    jobs === 'inline' ? createInlineQueue(ingest) : await createPgBossQueue(config.DATABASE_URL, ingest, app.log);
+  app.addHook('onClose', () => queue.stop());
   if (config.CORS_ORIGIN) await app.register(cors, { origin: config.CORS_ORIGIN });
   registerErrorHandling(app);
   await app.register(authPlugin, { config, db });
@@ -68,6 +100,7 @@ export async function buildApp({ config, db, llm }: AppDeps, opts: FastifyServer
       await api.register(processRoutes, { db });
       await api.register(packRoutes, { db });
       await api.register(interviewRoutes, { db, llm: gateway });
+      await api.register(knowledgeRoutes, { db, store: fileStore, embedder, jobs: queue });
     },
     { prefix: '/api/v1' },
   );

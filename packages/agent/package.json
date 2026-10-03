@@ -14,6 +14,7 @@
     "@ai-sdk/azure": "^4.0.90",
     "@ai-sdk/openai": "^4.0.83",
     "@process-ai/db": "workspace:*",
+    "@process-ai/knowledge": "workspace:*",
     "@process-ai/shared": "workspace:*",
     "ai": "^7.0.127",
     "drizzle-orm": "^0.45.3",

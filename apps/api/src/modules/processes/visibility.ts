@@ -28,7 +28,12 @@ export function canViewVersion(
  */
 export function pickDefaultVersion<
   V extends { id: string; versionNumber: number; status: VersionStatus; createdBy: string | null },
->(user: CurrentUser, versions: V[], currentVersionId: string | null, ctx: VisibilityContext): V | null {
+>(
+  user: CurrentUser,
+  versions: V[],
+  currentVersionId: string | null,
+  ctx: VisibilityContext,
+): V | null {
   const current = currentVersionId ? versions.find((v) => v.id === currentVersionId) : undefined;
   if (current) return current;
   return (

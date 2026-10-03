@@ -27,6 +27,9 @@ const ConfigSchema = z
     LLM_EXTRACTION_MODEL: z.string().optional(),
     AZURE_OPENAI_RESOURCE_NAME: z.string().optional(),
     AZURE_OPENAI_API_VERSION: z.string().optional(),
+    LLM_EMBEDDING_MODEL: z.string().default('text-embedding-3-small'),
+    /** Where uploaded documents are stored (a Docker volume in production). */
+    STORAGE_DIR: z.string().default('./storage'),
   })
   .superRefine((c, ctx) => {
     if (c.NODE_ENV === 'production' && c.AUTH_MODE === 'dev' && !c.ALLOW_DEV_AUTH) {

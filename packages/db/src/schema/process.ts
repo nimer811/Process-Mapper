@@ -227,6 +227,8 @@ export const evidence = pgTable(
     sourceType: evidenceSource().notNull(),
     /** Interview message the fact came from (FK added in migration to avoid a schema import cycle). */
     messageId: uuid(),
+    /** Document chunk the fact came from (FK added in migration to avoid a schema import cycle). */
+    chunkId: uuid(),
     quote: text(),
     providedBy: uuid().references(() => users.id),
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),

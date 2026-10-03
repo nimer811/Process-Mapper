@@ -22,6 +22,13 @@
       "when": 1791043998578,
       "tag": "0002_interviews",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1791046162340,
+      "tag": "0003_knowledge_base",
+      "breakpoints": true
     }
   ]
 }

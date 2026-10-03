@@ -1,4 +1,4 @@
-export { InterviewEngine, SessionBusyError, SessionClosedError, SessionNotFoundError, type InterviewEvent } from './interview/engine.js';
+export { InterviewEngine, type AssistantMessage, SessionBusyError, SessionClosedError, SessionNotFoundError, type InterviewEvent } from './interview/engine.js';
 export { loadState, UNTITLED } from './interview/repository.js';
 export { analyzeGaps, completeness } from './interview/gaps.js';
 export type { InterviewState } from './interview/state.js';

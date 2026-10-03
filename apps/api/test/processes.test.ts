@@ -12,7 +12,11 @@ describe('process library API', () => {
   });
 
   const list = async (email: string, qs = '') => {
-    const res = await t.app.inject({ method: 'GET', url: `/api/v1/processes${qs}`, headers: t.as(email) });
+    const res = await t.app.inject({
+      method: 'GET',
+      url: `/api/v1/processes${qs}`,
+      headers: t.as(email),
+    });
     expect(res.statusCode).toBe(200);
     return res.json<ProcessListItem[]>();
   };
@@ -38,12 +42,20 @@ describe('process library API', () => {
   it('returns a branching version graph with typed edges', async () => {
     const [vendor] = await list(EMPLOYEE);
     const detail = (
-      await t.app.inject({ method: 'GET', url: `/api/v1/processes/${vendor!.id}`, headers: t.as(EMPLOYEE) })
+      await t.app.inject({
+        method: 'GET',
+        url: `/api/v1/processes/${vendor!.id}`,
+        headers: t.as(EMPLOYEE),
+      })
     ).json<ProcessDetail>();
     expect(detail.versions[0]).toMatchObject({ versionNumber: 1, status: 'approved' });
 
     const graph = (
-      await t.app.inject({ method: 'GET', url: `/api/v1/versions/${detail.defaultVersionId}`, headers: t.as(EMPLOYEE) })
+      await t.app.inject({
+        method: 'GET',
+        url: `/api/v1/versions/${detail.defaultVersionId}`,
+        headers: t.as(EMPLOYEE),
+      })
     ).json<VersionGraph>();
     expect(graph.steps).toHaveLength(15);
     const decisions = graph.steps.filter((s) => s.type === 'decision');
@@ -55,7 +67,9 @@ describe('process library API', () => {
     );
     const bank = graph.steps.find((s) => s.stepKey === 'S13')!;
     expect(bank.actor?.name).toBe('Accounts Payable');
-    expect(graph.rules.some((r) => r.stepId === bank.id && r.provenance === 'documented')).toBe(true);
+    expect(graph.rules.some((r) => r.stepId === bank.id && r.provenance === 'documented')).toBe(
+      true,
+    );
   });
 
   it("returns 404 for a draft version the user can't see", async () => {
@@ -70,17 +84,37 @@ describe('process library API', () => {
 
   it('lets only admins manage departments, with an audit trail', async () => {
     const body = { name: 'Finance', slug: 'finance' };
-    const denied = await t.app.inject({ method: 'POST', url: '/api/v1/departments', headers: t.as(EMPLOYEE), payload: body });
+    const denied = await t.app.inject({
+      method: 'POST',
+      url: '/api/v1/departments',
+      headers: t.as(EMPLOYEE),
+      payload: body,
+    });
     expect(denied.statusCode).toBe(403);
 
-    const created = await t.app.inject({ method: 'POST', url: '/api/v1/departments', headers: t.as(ADMIN), payload: body });
+    const created = await t.app.inject({
+      method: 'POST',
+      url: '/api/v1/departments',
+      headers: t.as(ADMIN),
+      payload: body,
+    });
     expect(created.statusCode).toBe(201);
     expect(created.json<Department>()).toMatchObject({ name: 'Finance', processCount: 0 });
 
-    const dup = await t.app.inject({ method: 'POST', url: '/api/v1/departments', headers: t.as(ADMIN), payload: body });
+    const dup = await t.app.inject({
+      method: 'POST',
+      url: '/api/v1/departments',
+      headers: t.as(ADMIN),
+      payload: body,
+    });
     expect(dup.statusCode).toBe(409);
 
-    const bad = await t.app.inject({ method: 'POST', url: '/api/v1/departments', headers: t.as(ADMIN), payload: { name: 'X', slug: 'Bad Slug' } });
+    const bad = await t.app.inject({
+      method: 'POST',
+      url: '/api/v1/departments',
+      headers: t.as(ADMIN),
+      payload: { name: 'X', slug: 'Bad Slug' },
+    });
     expect(bad.statusCode).toBe(400);
     expect(bad.json().errors.length).toBeGreaterThan(0);
 

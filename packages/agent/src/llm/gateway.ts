@@ -1,4 +1,5 @@
 import type { z } from 'zod';
+import type { Embedder } from '@process-ai/knowledge';
 
 export type LlmPurpose = 'extract' | 'respond' | 'summarise' | 'rolling_summary' | 'analyse';
 
@@ -30,7 +31,7 @@ export interface TextRequest {
  * Provider-agnostic model access. The engine depends only on this interface, so OpenAI,
  * Azure OpenAI or a scripted mock can be swapped by configuration.
  */
-export interface LlmGateway {
+export interface LlmGateway extends Embedder {
   readonly provider: string;
   generateObject<T>(req: ObjectRequest<T>, onCall?: (r: LlmCallRecord) => void): Promise<T>;
   /** Streams text chunks; the full text is the concatenation. */

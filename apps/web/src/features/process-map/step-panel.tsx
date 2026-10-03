@@ -25,9 +25,7 @@ export function StepPanel({ graph, step, onClose, onSelectStep }: StepPanelProps
   return (
     <Sheet open={!!step} onOpenChange={(open) => !open && onClose()}>
       <SheetContent className="w-full gap-0 sm:max-w-md">
-        {step && (
-          <StepDetails graph={graph} step={step} onSelectStep={onSelectStep} />
-        )}
+        {step && <StepDetails graph={graph} step={step} onSelectStep={onSelectStep} />}
       </SheetContent>
     </Sheet>
   );
@@ -67,7 +65,9 @@ function StepDetails({
             <Field label="System">{step.systems.map((s) => s.name).join(', ')}</Field>
             <Field label="Input">{list(step.inputs)}</Field>
             <Field label="Output">{list(step.outputs)}</Field>
-            <Field label="Execution">{step.execution === 'unknown' ? null : humanize(step.execution)}</Field>
+            <Field label="Execution">
+              {step.execution === 'unknown' ? null : humanize(step.execution)}
+            </Field>
             <Field label="Duration">{step.expectedDuration}</Field>
             <Field label="SLA">{step.sla}</Field>
             {step.type === 'approval' && <Field label="Approver">{step.approvalAuthority}</Field>}
@@ -109,7 +109,11 @@ function StepDetails({
                         {e.conditionLabel && (
                           <Badge
                             variant="outline"
-                            className={e.type === 'exception' ? 'border-red-300 text-red-700 dark:text-red-300' : ''}
+                            className={
+                              e.type === 'exception'
+                                ? 'border-red-300 text-red-700 dark:text-red-300'
+                                : ''
+                            }
                           >
                             {e.conditionLabel}
                           </Badge>
@@ -137,7 +141,10 @@ function StepDetails({
             )}
           </Section>
 
-          <Section title="Automation opportunities" icon={<Lightbulb className="size-4 text-sky-600" />}>
+          <Section
+            title="Automation opportunities"
+            icon={<Lightbulb className="size-4 text-sky-600" />}
+          >
             <Muted>Identified after validation (Phase 5).</Muted>
           </Section>
         </div>
@@ -159,7 +166,15 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
-function Section({ title, icon, children }: { title: string; icon?: ReactNode; children: ReactNode }) {
+function Section({
+  title,
+  icon,
+  children,
+}: {
+  title: string;
+  icon?: ReactNode;
+  children: ReactNode;
+}) {
   return (
     <section>
       <h3 className="mb-2 flex items-center gap-1.5 text-sm font-semibold">

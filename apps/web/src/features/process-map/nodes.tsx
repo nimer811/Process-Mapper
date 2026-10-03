@@ -15,8 +15,16 @@ const provenanceBorder = {
 function Handles() {
   return (
     <>
-      <Handle type="target" position={Position.Left} className="!size-1.5 !border-0 !bg-transparent" />
-      <Handle type="source" position={Position.Right} className="!size-1.5 !border-0 !bg-transparent" />
+      <Handle
+        type="target"
+        position={Position.Left}
+        className="!size-1.5 !border-0 !bg-transparent"
+      />
+      <Handle
+        type="source"
+        position={Position.Right}
+        className="!size-1.5 !border-0 !bg-transparent"
+      />
     </>
   );
 }

@@ -16,7 +16,7 @@ describe('auth (dev mode) and health', () => {
       AUTH_MODE: 'dev',
       LOG_LEVEL: 'fatal',
     });
-    app = await buildApp({ config, db: testDb.db });
+    app = await buildApp({ config, db: testDb.db, llm: null, jobs: 'inline' });
   });
 
   afterAll(async () => {

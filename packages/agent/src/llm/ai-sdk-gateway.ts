@@ -1,4 +1,4 @@
-import { generateText, Output, streamText, type LanguageModel } from 'ai';
+import { embedMany, generateText, Output, streamText, type EmbeddingModel, type LanguageModel } from 'ai';
 import { createOpenAI } from '@ai-sdk/openai';
 import { createAzure } from '@ai-sdk/azure';
 import type { LlmCallRecord, LlmGateway, LlmPurpose, ObjectRequest, TextRequest } from './gateway.js';
@@ -10,6 +10,8 @@ export interface AiSdkGatewayConfig {
   chatModel: string;
   /** Optional separate model for structured extraction. */
   extractionModel?: string;
+  /** Embedding model (OpenAI) or deployment (Azure). */
+  embeddingModel: string;
   azureResourceName?: string;
   azureApiVersion?: string;
   timeoutMs?: number;
@@ -20,6 +22,7 @@ export class AiSdkGateway implements LlmGateway {
   readonly provider: string;
   private readonly models: Record<'chat' | 'extract', { id: string; model: LanguageModel }>;
   private readonly timeoutMs: number;
+  private readonly embedding: EmbeddingModel;
 
   constructor(cfg: AiSdkGatewayConfig) {
     this.provider = cfg.provider;
@@ -29,6 +32,7 @@ export class AiSdkGateway implements LlmGateway {
         ? createAzure({ apiKey: cfg.apiKey, resourceName: cfg.azureResourceName, apiVersion: cfg.azureApiVersion })
         : createOpenAI({ apiKey: cfg.apiKey });
     const extractId = cfg.extractionModel || cfg.chatModel;
+    this.embedding = factory.embedding(cfg.embeddingModel);
     this.models = {
       chat: { id: cfg.chatModel, model: factory(cfg.chatModel) },
       extract: { id: extractId, model: factory(extractId) },
@@ -37,6 +41,12 @@ export class AiSdkGateway implements LlmGateway {
 
   private pick(purpose: LlmPurpose) {
     return purpose === 'extract' || purpose === 'analyse' ? this.models.extract : this.models.chat;
+  }
+
+  async embed(texts: string[]): Promise<number[][]> {
+    if (texts.length === 0) return [];
+    const { embeddings } = await embedMany({ model: this.embedding, values: texts, maxRetries: 2 });
+    return embeddings;
   }
 
   async generateObject<T>(req: ObjectRequest<T>, onCall?: (r: LlmCallRecord) => void): Promise<T> {

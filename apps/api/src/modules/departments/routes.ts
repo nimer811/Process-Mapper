@@ -1,14 +1,15 @@
-import { asc, count, eq, isNull, and } from 'drizzle-orm';
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
-import { departments, processes, type Db } from '@process-ai/db';
+import { and, asc, count, departments, eq, isNull, processes, type Db } from '@process-ai/db';
 import { Department, DepartmentInput } from '@process-ai/shared';
 import { audit } from '../../lib/audit.js';
 
 const IdParams = z.object({ id: z.uuid() });
 
 function isUniqueViolation(e: unknown) {
-  const code = (e as { code?: string; cause?: { code?: string } }).code ?? (e as { cause?: { code?: string } }).cause?.code;
+  const code =
+    (e as { code?: string; cause?: { code?: string } }).code ??
+    (e as { cause?: { code?: string } }).cause?.code;
   return code === '23505';
 }
 
@@ -34,11 +35,15 @@ export const departmentRoutes: FastifyPluginAsyncZod<{ db: Db }> = async (app, {
     return rows;
   }
 
-  app.get('/departments', { schema: { response: { 200: z.array(Department) } } }, async (request) => {
-    const user = app.requireUser(request);
-    const rows = await load();
-    return user.roles.includes('admin') ? rows : rows.filter((d) => d.isActive);
-  });
+  app.get(
+    '/departments',
+    { schema: { response: { 200: z.array(Department) } } },
+    async (request) => {
+      const user = app.requireUser(request);
+      const rows = await load();
+      return user.roles.includes('admin') ? rows : rows.filter((d) => d.isActive);
+    },
+  );
 
   app.post(
     '/departments',
@@ -59,7 +64,8 @@ export const departmentRoutes: FastifyPluginAsyncZod<{ db: Db }> = async (app, {
         const [dept] = await load(created.id);
         return reply.status(201).send(dept!);
       } catch (e) {
-        if (isUniqueViolation(e)) throw app.httpErrors.conflict('A department with this slug already exists');
+        if (isUniqueViolation(e))
+          throw app.httpErrors.conflict('A department with this slug already exists');
         throw e;
       }
     },
@@ -67,10 +73,14 @@ export const departmentRoutes: FastifyPluginAsyncZod<{ db: Db }> = async (app, {
 
   app.patch(
     '/departments/:id',
-    { schema: { params: IdParams, body: DepartmentInput.partial(), response: { 200: Department } } },
+    {
+      schema: { params: IdParams, body: DepartmentInput.partial(), response: { 200: Department } },
+    },
     async (request) => {
       app.requireRole(request, 'admin');
-      const before = await db.query.departments.findFirst({ where: eq(departments.id, request.params.id) });
+      const before = await db.query.departments.findFirst({
+        where: eq(departments.id, request.params.id),
+      });
       if (!before) throw app.httpErrors.notFound('Department not found');
       try {
         await db.transaction(async (tx) => {
@@ -88,7 +98,8 @@ export const departmentRoutes: FastifyPluginAsyncZod<{ db: Db }> = async (app, {
           });
         });
       } catch (e) {
-        if (isUniqueViolation(e)) throw app.httpErrors.conflict('A department with this slug already exists');
+        if (isUniqueViolation(e))
+          throw app.httpErrors.conflict('A department with this slug already exists');
         throw e;
       }
       const [dept] = await load(before.id);

@@ -1,13 +1,17 @@
-import { and, asc, desc, eq, inArray } from 'drizzle-orm';
 import {
+  and,
+  asc,
   departments,
+  desc,
+  eq,
+  inArray,
   interviewMessages,
   interviewSessions,
   openItems,
   processes,
   processVersions,
-  users,
   type Db,
+  users,
 } from '@process-ai/db';
 import type { CurrentUser, InterviewDetail, InterviewSummary } from '@process-ai/shared';
 
@@ -70,7 +74,11 @@ export async function getAccessibleSession(db: Db, user: CurrentUser, id: string
   return { summary: toSummary(row), isOwner };
 }
 
-export async function getInterviewDetail(db: Db, summary: InterviewSummary, aiAvailable: boolean): Promise<InterviewDetail> {
+export async function getInterviewDetail(
+  db: Db,
+  summary: InterviewSummary,
+  aiAvailable: boolean,
+): Promise<InterviewDetail> {
   const [messages, items] = await Promise.all([
     db
       .select()
@@ -86,7 +94,18 @@ export async function getInterviewDetail(db: Db, summary: InterviewSummary, aiAv
   return {
     ...summary,
     aiAvailable,
-    messages: messages.map((m) => ({ id: m.id, role: m.role, content: m.content, createdAt: m.createdAt.toISOString() })),
+    messages: messages.map((m) => ({
+      id: m.id,
+      role: m.role,
+      content: m.content,
+      createdAt: m.createdAt.toISOString(),
+      citations: (
+        (m.metadata as { citations?: { documentId: string; label: string }[] }).citations ?? []
+      ).map((c) => ({
+        documentId: c.documentId,
+        label: c.label,
+      })),
+    })),
     openItems: items.map((i) => ({
       id: i.id,
       type: i.type,

@@ -1,5 +1,5 @@
 import { openItemLabels } from './validate.js';
-import type { InterviewState, OpenItemState } from './state.js';
+import type { InterviewState, OpenItemState, ReferenceDoc } from './state.js';
 
 const prov = (p: string) => (p === 'stated' ? '' : ` (${p})`);
 
@@ -65,7 +65,7 @@ export function renderOpenItems(state: InterviewState): string {
   const byId = new Map(state.openItems.map((i) => [i.id, i]));
   const rows = [...labels.entries()].map(([label, id]) => {
     const i = byId.get(id)!;
-    return `${label} (${i.type}${i.status === 'asked' ? ', already asked' : ''}): ${i.description}`;
+    return `${label} (${i.type}${i.status === 'asked' ? ', already asked' : ''}): ${i.description}${i.citation ? ` [source: ${i.citation.label}]` : ''}`;
   });
   return rows.length ? rows.join('\n') : '(none)';
 }
@@ -78,5 +78,17 @@ export function renderRecent(state: InterviewState, limit = 8): string {
 }
 
 export function describeQuestions(items: OpenItemState[]) {
-  return items.map((i, n) => `${n + 1}. ${i.description}${i.type === 'contradiction' ? ' (contradiction — ask which is correct)' : ''}`).join('\n');
+  return items
+    .map((i, n) => {
+      const source = i.citation ? ` (source: ${i.citation.label})` : '';
+      const note = i.type === 'contradiction' ? ' (contradiction — name the source and ask which reflects what happens today)' : '';
+      return `${n + 1}. ${i.description}${source}${note}`;
+    })
+    .join('\n');
+}
+
+/** Reference passages for the extractor, clearly marked as official documents (data, not instructions). */
+export function renderReferenceDocs(docs: ReferenceDoc[]): string {
+  if (!docs.length) return '(no relevant documents found)';
+  return docs.map((d) => `[${d.docLabel}] ${d.label}\n${d.content.slice(0, 1500)}`).join('\n\n');
 }

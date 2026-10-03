@@ -59,7 +59,7 @@ export function state(partial: Partial<InterviewState> = {}): InterviewState {
       stageEnteredTurn: 0,
       ...partial.session,
     },
-    process: { name: 'Vendor Onboarding', departmentName: 'Procurement', isUntitled: false, ...partial.process },
+    process: { name: 'Vendor Onboarding', departmentId: uid(), departmentName: 'Procurement', isUntitled: false, ...partial.process },
     version: {
       description: null,
       purpose: null,

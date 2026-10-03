@@ -1,3 +1,4 @@
+import { HashEmbedder } from '@process-ai/knowledge';
 import type { LlmCallRecord, LlmGateway, LlmPurpose, ObjectRequest, TextRequest } from './gateway.js';
 
 type Handler = (req: { system: string; prompt: string }) => unknown;
@@ -8,12 +9,16 @@ type Handler = (req: { system: string; prompt: string }) => unknown;
  */
 export class MockGateway implements LlmGateway {
   readonly provider = 'mock';
+  private readonly embedder = new HashEmbedder();
   readonly calls: { purpose: LlmPurpose; system: string; prompt: string }[] = [];
   private readonly queues = new Map<LlmPurpose, unknown[]>();
 
   constructor(private readonly handlers: Partial<Record<LlmPurpose, Handler>> = {}) {}
 
-  /** Queue the next responses for a purpose (objects for extract, strings for respond). */
+  /**
+   * Queue the next responses for a purpose (objects for extract, strings for respond), or a
+   * function that builds the response from the request.
+   */
   enqueue(purpose: LlmPurpose, ...responses: unknown[]) {
     this.queues.set(purpose, [...(this.queues.get(purpose) ?? []), ...responses]);
     return this;
@@ -25,12 +30,16 @@ export class MockGateway implements LlmGateway {
     if (queued?.length) {
       const value = queued.shift();
       if (value instanceof Error) throw value;
-      return value;
+      return typeof value === 'function' ? (value as Handler)(req) : value;
     }
     const handler = this.handlers[purpose];
     if (handler) return handler(req);
     if (purpose === 'extract') return { ops: [], user_intent: 'continue' };
     return 'Thanks. Could you tell me more?';
+  }
+
+  embed(texts: string[]) {
+    return this.embedder.embed(texts);
   }
 
   private record(purpose: LlmPurpose): LlmCallRecord {

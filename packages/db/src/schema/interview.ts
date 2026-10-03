@@ -85,6 +85,8 @@ export const openItems = pgTable(
     entityId: uuid(),
     field: text(),
     description: text().notNull(),
+    /** SOP passage behind a contradiction (FK added in migration). */
+    chunkId: uuid(),
     priority: integer().notNull().default(50),
     status: openItemStatus().notNull().default('open'),
     timesAsked: integer().notNull().default(0),

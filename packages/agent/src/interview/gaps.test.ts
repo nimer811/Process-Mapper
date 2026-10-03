@@ -8,7 +8,7 @@ const keys = (s: ReturnType<typeof state>) => analyzeGaps(s).map((g) => g.gapKey
 
 describe('analyzeGaps', () => {
   it('asks for scoping facts on an empty process', () => {
-    const k = keys(state({ process: { name: 'Untitled process', departmentName: 'Procurement', isUntitled: true } }));
+    const k = keys(state({ process: { name: 'Untitled process', departmentId: 'd', departmentName: 'Procurement', isUntitled: true } }));
     expect(k).toEqual(expect.arrayContaining(['process:name', 'process:trigger', 'process:end_condition', 'process:purpose', 'process:owner_role']));
   });
 

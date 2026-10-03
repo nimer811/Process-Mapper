@@ -13,6 +13,10 @@ const Quote = z
   .string()
   .nullable()
   .describe('Exact words copied from the user\'s latest message that support this change. Null when inferred.');
+const SourceDoc = z
+  .string()
+  .nullable()
+  .describe('Label of the reference document this comes from, e.g. "D2". Null if not from a document.');
 const StepRef = z
   .string()
   .describe('An existing step key such as "S3", or a ref such as "new1" introduced by add_step earlier in this list');
@@ -95,7 +99,10 @@ export const AddRule = z.object({
   step: StepRef.nullable().describe('Step the rule applies to, or null for the whole process'),
   rule_type: z.enum(['threshold', 'approval', 'compliance', 'sla', 'control', 'other']),
   statement: z.string(),
-  provenance: Provenance,
+  provenance: z
+    .enum(['stated', 'inferred', 'documented'])
+    .describe('"documented" when the rule comes from a reference document (then set source); "stated" when the employee said it'),
+  source: SourceDoc,
   quote: Quote,
 });
 
@@ -116,7 +123,10 @@ export const RaiseItem = z.object({
   op: z.literal('raise_item'),
   type: z.enum(['ambiguity', 'contradiction', 'assumption', 'question']),
   step: StepRef.nullable(),
-  description: z.string().describe('The question to clarify, phrased for the interviewer'),
+  description: z
+    .string()
+    .describe('The question to clarify, phrased for the interviewer. For contradictions, state both versions.'),
+  source: SourceDoc,
   priority: z.enum(['high', 'medium', 'low']),
 });
 

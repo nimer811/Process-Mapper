@@ -1,11 +1,16 @@
 import { z } from 'zod';
 import { InterviewStage, InterviewStatus, OpenItemStatus, OpenItemType } from './process.js';
 
+export const Citation = z.object({ documentId: z.uuid(), label: z.string() });
+export type Citation = z.infer<typeof Citation>;
+
 export const InterviewMessage = z.object({
   id: z.uuid(),
   role: z.enum(['user', 'assistant']),
   content: z.string(),
   createdAt: z.iso.datetime(),
+  /** Reference documents the message relies on (e.g. the SOP behind a contradiction question). */
+  citations: z.array(Citation),
 });
 export type InterviewMessage = z.infer<typeof InterviewMessage>;
 

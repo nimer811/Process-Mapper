@@ -83,14 +83,22 @@ export async function applyOps(tx: Db, ctx: ApplyContext, ops: ValidOp[]): Promi
   const typeOf = (id: string) => stepById.get(id)?.type ?? newTypes.get(id);
   const newTypes = new Map<string, string>();
 
-  const recordEvidence = async (entityType: string, entityId: string, prov: 'stated' | 'inferred', quote: string | null, field: string | null = null) => {
+  const recordEvidence = async (
+    entityType: string,
+    entityId: string,
+    prov: ValidOp['finalProvenance'],
+    quote: string | null,
+    field: string | null = null,
+    chunkId: string | null = null,
+  ) => {
     await tx.insert(evidence).values({
       versionId,
       entityType,
       entityId,
       field,
-      sourceType: prov === 'stated' ? 'user_statement' : 'ai_inference',
+      sourceType: prov === 'stated' ? 'user_statement' : prov === 'documented' ? 'document' : 'ai_inference',
       messageId: ctx.messageId,
+      chunkId,
       quote: prov === 'stated' ? quote : null,
       providedBy: prov === 'stated' ? ctx.userId : null,
     });
@@ -111,6 +119,9 @@ export async function applyOps(tx: Db, ctx: ApplyContext, ops: ValidOp[]): Promi
 
     switch (op.op) {
       case 'set_process_field': {
+        // Models often repeat facts they already gave; don't re-record unchanged values.
+        const current = op.field === 'name' ? state.process.name : state.version[fieldColumn[op.field]];
+        if (current && normalizeName(current) === normalizeName(op.value)) break;
         if (op.field === 'name') {
           const name = op.value.trim().slice(0, 120);
           // Interviews build first drafts, so the URL slug follows the name.
@@ -246,8 +257,8 @@ export async function applyOps(tx: Db, ctx: ApplyContext, ops: ValidOp[]): Promi
           .insert(businessRules)
           .values({ versionId, stepId, ruleType: op.rule_type, statement: op.statement.trim(), provenance: prov })
           .returning();
-        await recordEvidence('rule', rule!.id, prov, quote);
-        changes.push(`Recorded rule: ${op.statement.trim()}`);
+        await recordEvidence('rule', rule!.id, prov, quote, null, op.sourceChunkId ?? null);
+        changes.push(`Recorded ${prov === 'documented' ? 'SOP rule' : 'rule'}: ${op.statement.trim()}`);
         break;
       }
 
@@ -279,8 +290,10 @@ export async function applyOps(tx: Db, ctx: ApplyContext, ops: ValidOp[]): Promi
           entityType: stepId ? 'step' : 'process',
           entityId: stepId,
           description: op.description.trim(),
+          chunkId: op.sourceChunkId ?? null,
           priority: PRIORITY[op.priority],
         });
+        if (op.type === 'contradiction') changes.push(`Flagged a difference from the SOP`);
         break;
       }
 

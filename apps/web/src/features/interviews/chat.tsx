@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
-import { ArrowUp, Bot, Sparkles } from 'lucide-react';
+import { ArrowUp, Bot, FileText, Sparkles } from 'lucide-react';
+import { downloadDocument } from '@/features/knowledge/document-table';
 import type { InterviewMessage } from '@process-ai/shared';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -31,6 +32,7 @@ export function ChatMessages({
       {messages.map((m) => (
         <div key={m.id}>
           <Bubble role={m.role} content={m.content} />
+          {m.citations.length > 0 && <Citations citations={m.citations} />}
           {notes[m.id] && <Captured changes={notes[m.id]!.changes} />}
         </div>
       ))}
@@ -83,6 +85,25 @@ function TypingDots() {
         />
       ))}
     </span>
+  );
+}
+
+function Citations({ citations }: { citations: InterviewMessage['citations'] }) {
+  return (
+    <div className="mt-1.5 ml-9.5 flex flex-wrap gap-1.5">
+      {citations.map((c) => (
+        <button
+          key={c.label}
+          type="button"
+          onClick={() => downloadDocument({ id: c.documentId, filename: c.label })}
+          className="bg-background hover:bg-muted text-muted-foreground flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px]"
+          title="Open the source document"
+        >
+          <FileText className="size-3" />
+          {c.label}
+        </button>
+      ))}
+    </div>
   );
 }
 

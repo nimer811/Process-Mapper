@@ -1,5 +1,5 @@
 import { MAX_OPS_PER_TURN, type Op } from './ops.js';
-import type { InterviewState } from './state.js';
+import type { InterviewState, ReferenceDoc } from './state.js';
 
 export type StepTarget = { kind: 'existing'; id: string } | { kind: 'new'; ref: string };
 
@@ -7,8 +7,10 @@ export type StepTarget = { kind: 'existing'; id: string } | { kind: 'new'; ref: 
 export type ValidOp = Op & {
   /** Resolved targets keyed by the op's step-reference field names. */
   targets: Record<string, StepTarget | null>;
-  /** Final provenance after the quote check ("stated" claims without support become "inferred"). */
-  finalProvenance: 'stated' | 'inferred';
+  /** Final provenance after checks ("stated" claims without support become "inferred"). */
+  finalProvenance: 'stated' | 'inferred' | 'documented';
+  /** Document chunk cited by the op (only chunks retrieved for this turn are accepted). */
+  sourceChunkId?: string;
   /** Open item id for resolve_open_item. */
   openItemId?: string;
 };
@@ -44,7 +46,13 @@ export function openItemLabels(state: InterviewState) {
  * Checks every proposed op against the current state. Deterministic, no I/O.
  * Rejected ops are reported (and logged by the caller) instead of being silently applied.
  */
-export function validateOps(state: InterviewState, ops: Op[], userMessage: string): ValidationResult {
+export function validateOps(
+  state: InterviewState,
+  ops: Op[],
+  userMessage: string,
+  docs: ReferenceDoc[] = [],
+): ValidationResult {
+  const docsByLabel = new Map(docs.map((d) => [d.docLabel, d]));
   const result: ValidationResult = { accepted: [], rejected: [], downgraded: 0 };
   const byKey = new Map(state.steps.map((s) => [s.stepKey.toUpperCase(), s]));
   const newRefs = new Set<string>();
@@ -114,7 +122,9 @@ export function validateOps(state: InterviewState, ops: Op[], userMessage: strin
         break;
       case 'add_rule':
         if (!op.statement.trim()) error = 'empty rule';
-        else error = need('step', op.step, false);
+        else if (op.provenance === 'documented' && !docsByLabel.has(op.source ?? '')) {
+          error = `documented rule cites unknown reference "${op.source}"`;
+        } else error = need('step', op.step, false);
         break;
       case 'add_pain_point':
         if (!op.text.trim()) error = 'empty pain point';
@@ -125,6 +135,7 @@ export function validateOps(state: InterviewState, ops: Op[], userMessage: strin
         break;
       case 'raise_item':
         if (!op.description.trim()) error = 'empty description';
+        else if (op.source && !docsByLabel.has(op.source)) error = `cites unknown reference "${op.source}"`;
         else error = need('step', op.step, false);
         break;
       case 'set_focus':
@@ -139,7 +150,7 @@ export function validateOps(state: InterviewState, ops: Op[], userMessage: strin
 
     // Provenance: "stated" must be backed by the user's own words in this message.
     const claimed = 'provenance' in op ? op.provenance : 'quote' in op ? 'stated' : 'inferred';
-    let finalProvenance: 'stated' | 'inferred' = claimed;
+    let finalProvenance: ValidOp['finalProvenance'] = claimed;
     if (claimed === 'stated' && 'quote' in op && !quoteSupported(op.quote, userMessage)) {
       finalProvenance = 'inferred';
       result.downgraded++;
@@ -150,6 +161,7 @@ export function validateOps(state: InterviewState, ops: Op[], userMessage: strin
       targets,
       finalProvenance,
       ...(op.op === 'resolve_open_item' ? { openItemId: itemLabels.get(op.item) } : {}),
+      ...('source' in op && op.source && docsByLabel.has(op.source) ? { sourceChunkId: docsByLabel.get(op.source)!.chunkId } : {}),
     });
   }
 

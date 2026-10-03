@@ -1,7 +1,6 @@
 import fp from 'fastify-plugin';
-import { eq } from 'drizzle-orm';
 import { z } from 'zod';
-import { users, type Db } from '@process-ai/db';
+import { eq, type Db, users } from '@process-ai/db';
 import { DEV_USER_HEADER, type CurrentUser, type UserRole } from '@process-ai/shared';
 import type { Config } from '../config.js';
 

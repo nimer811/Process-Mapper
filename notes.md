@@ -21,6 +21,25 @@ Move resolved notes to `docs/notes/` or `docs/decisions/` once they are settled.
 
 -->
 
+## 2026-10-03 — Phase 3 (Knowledge base & SOP grounding)
+
+**Done:**
+- Migration `0003_knowledge_base`: pgvector extension, knowledge_bases, documents (category, version, effective date, status), document_chunks (vector(1536) HNSW + full-text GIN); evidence/open items can cite a chunk
+- `packages/knowledge`: content-based file checks (PDF/DOCX/XLSX/TXT, 25 MB, zip-bomb guard), structure-aware parsing (DOCX headings + table rows, XLSX rows with headers, PDF pages), chunking, local file store, hybrid search (vector + full-text, RRF)
+- Indexing runs on pg-boss (Postgres queue) in the API process; status pending → processing → ready/failed
+- Engine: top-5 SOP passages per turn; documented rules; contradictions cite the SOP; validator rejects citations not retrieved this turn
+- Admin → Knowledge bases (create, upload, status, re-index, deactivate, delete, test search); Knowledge page for all users; Documents tab on processes; citation chips in chat
+- SheetJS vendored at `vendor/xlsx-0.20.3.tgz` (official CDN build, SHA-512 recorded)
+- Verified end to end in Docker with the real model: contradiction question cites "Procurement Policy, 4.2 Finance review"
+- Fixed Docker packaging (externalised node_modules + hoisted deploy; pdfkit back in prod deps)
+
+**Still open:**
+- Upload the real Procurement SOPs and review retrieval with the test search
+- Backlog: CI smoke test that builds and starts the Docker image (two packaging bugs only showed up there)
+- OCR for scanned PDFs not supported (flagged as failed with a clear message)
+
+**Next:** Phase 4 — Validation, versioning & provenance (summary confirm/correct, owner validation, admin approval, evidence drawer)
+
 ## 2026-10-03 — Phase 2 (AI interview engine) + PoC chat
 
 **Done:**
@@ -36,7 +55,6 @@ Move resolved notes to `docs/notes/` or `docs/decisions/` once they are settled.
 - Add `LLM_API_KEY` to `.env` and run a real interview; tune prompts on real Procurement conversations
 - Interview quality not yet evaluated against a real model (needs the key)
 
-**Next:** Phase 3 — Knowledge base (KB containers + categories in Admin, upload, vectorise) and SOP grounding
 
 ## 2026-10-03 — Phase 1 (Process Library & Map) complete
 

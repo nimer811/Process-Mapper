@@ -1,0 +1,33 @@
+{
+  "name": "@process-ai/knowledge",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./test-fixtures": "./src/test/fixtures.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@process-ai/db": "workspace:*",
+    "@process-ai/shared": "workspace:*",
+    "drizzle-orm": "^0.45.3",
+    "fflate": "^0.8.3",
+    "file-type": "^22.1.1",
+    "mammoth": "^1.13.0",
+    "node-html-parser": "^9.0.4",
+    "unpdf": "^1.8.1",
+    "xlsx": "file:../../vendor/xlsx-0.20.3.tgz"
+  },
+  "devDependencies": {
+    "@types/node": "^22",
+    "@types/pdfkit": "^0.17.6",
+    "docx": "^9.8.1",
+    "pdfkit": "^0.20.2",
+    "typescript": "~6.0.3",
+    "vitest": "^5.0.3"
+  }
+}
