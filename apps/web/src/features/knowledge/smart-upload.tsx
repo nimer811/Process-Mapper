@@ -145,7 +145,8 @@ export function DocumentInbox({ knowledgeBases }: { knowledgeBases: KnowledgeBas
       q.state.data?.some((d) => d.status === 'pending' || d.status === 'processing') ? 2000 : false,
   });
   const qc = useQueryClient();
-  const workingCount = inbox.data?.filter((d) => d.status === 'pending' || d.status === 'processing').length ?? 0;
+  const workingCount =
+    inbox.data?.filter((d) => d.status === 'pending' || d.status === 'processing').length ?? 0;
   const previous = useRef(workingCount);
   // When files finish sorting, the knowledge-base counts and lists change.
   useEffect(() => {

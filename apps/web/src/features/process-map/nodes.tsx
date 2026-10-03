@@ -13,6 +13,13 @@ import {
 import { cn } from '@/lib/utils';
 import type { StepNode } from './layout';
 
+/** Comparison highlight ring (As-Is vs To-Be). */
+const highlightRing = {
+  added: 'ring-2 ring-emerald-500 ring-offset-2',
+  modified: 'ring-2 ring-amber-500 ring-offset-2',
+  removed: 'ring-2 ring-red-500 ring-offset-2 opacity-60',
+} as const;
+
 const provenanceBorder = {
   stated: '',
   documented: '',
@@ -82,6 +89,7 @@ export const TaskNode = memo(function TaskNode({ data, selected }: NodeProps<Ste
         'bg-card text-card-foreground relative flex h-full w-full flex-col justify-between rounded-lg border px-3 py-2 shadow-xs transition-shadow',
         isApproval && 'border-l-4 border-l-amber-500',
         provenanceBorder[step.provenance],
+        data.highlight && highlightRing[data.highlight],
         selected && 'ring-ring ring-2 ring-offset-1',
       )}
     >
@@ -125,6 +133,7 @@ export const DecisionNode = memo(function DecisionNode({ data, selected }: NodeP
         className={cn(
           'absolute inset-[15%] rotate-45 rounded-md border-2 border-sky-500 bg-sky-50 shadow-xs dark:bg-sky-950',
           provenanceBorder[step.provenance],
+          data.highlight && highlightRing[data.highlight],
           selected && 'ring-ring ring-2 ring-offset-1',
         )}
       />
@@ -146,6 +155,7 @@ export const TerminalNode = memo(function TerminalNode({ data, selected }: NodeP
           ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950'
           : 'border-foreground/70 bg-muted',
         provenanceBorder[step.provenance],
+        data.highlight && highlightRing[data.highlight],
         selected && 'ring-ring ring-2 ring-offset-1',
       )}
     >

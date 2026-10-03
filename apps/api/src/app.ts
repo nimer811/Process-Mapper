@@ -18,6 +18,7 @@ import { createInlineQueue, createPgBossQueue, type JobQueue } from './lib/jobs.
 import { knowledgeRoutes, UPLOAD_LIMITS } from './modules/knowledge/routes.js';
 import { governanceRoutes } from './modules/governance/routes.js';
 import { analysisRoutes } from './modules/analysis/routes.js';
+import { designRoutes } from './modules/design/routes.js';
 import type { Config } from './config.js';
 import { registerErrorHandling } from './plugins/errors.js';
 import { authPlugin } from './plugins/auth.js';
@@ -106,6 +107,7 @@ export async function buildApp({ config, db, llm, store, jobs }: AppDeps, opts: 
       await api.register(knowledgeRoutes, { db, store: fileStore, embedder, jobs: queue });
       await api.register(governanceRoutes, { db });
       await api.register(analysisRoutes, { db, llm: gateway });
+      await api.register(designRoutes, { db, llm: gateway });
     },
     { prefix: '/api/v1' },
   );

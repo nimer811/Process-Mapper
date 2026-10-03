@@ -7,7 +7,10 @@ export function DocumentStatus({ doc }: { doc: KnowledgeDocument }) {
   if (!doc.isActive) return <Badge variant="outline">Inactive</Badge>;
   if (doc.status === 'ready' && !doc.knowledgeBaseId) {
     return (
-      <Badge variant="secondary" className="bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-200">
+      <Badge
+        variant="secondary"
+        className="bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-200"
+      >
         Indexed · not filed
       </Badge>
     );

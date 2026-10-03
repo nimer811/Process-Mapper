@@ -35,3 +35,7 @@ See §2, §11 and "Decisions that need your approval" in the build plan.
 - **Teams integration is removed from the schedule.** Phase 7 is now a temporary, standalone chat interface (`/chat`) to prove the concept with real users.
 - **The production channel is decided after the PoC** (Phase 8). Teams remains a documented option (build plan §7).
 - Consequence: no bot registration, Azure Bot or Teams app work for now. The interview engine and API stay channel-agnostic, so the chosen channel is an adapter over the same `/api/v1/interviews` endpoints.
+
+## Change (2026-10-03): To-Be design and smart upload brought into scope
+- **To-Be process design is now in scope** (previously deferred). It is a separate version kind created from the current As-Is: the AI proposes typed changes implementing chosen opportunities and owner goals; code applies them to a To-Be draft and logs each change with its rationale and opportunity. AI-designed elements are "inferred" until confirmed. A To-Be never replaces the current As-Is, even when validated or approved.
+- **Smart bulk upload**: documents can be uploaded without choosing a knowledge base or category; the AI files them (with confidence and reason) and uncertain ones go to a review inbox. Manual category selection remains available.

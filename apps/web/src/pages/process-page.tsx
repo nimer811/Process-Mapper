@@ -16,12 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyTitle,
-} from '@/components/ui/empty';
+import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '@/components/ui/empty';
 import { formatDate, humanize } from '@/lib/format';
 import { useProcess, useVersionGraph } from '@/features/processes/queries';
 import { StatusBadge } from '@/features/processes/badges';
@@ -41,6 +36,8 @@ import { VersionsPanel } from '@/features/governance/versions-panel';
 import { useReadiness, useRefreshProcess } from '@/features/governance/queries';
 import { findingCounts, useFindings } from '@/features/analysis/queries';
 import { IssuesTab, OpportunitiesTab } from '@/features/analysis/findings-tabs';
+import { DesignToBeButton } from '@/features/design/to-be-dialog';
+import { ChangesPanel } from '@/features/design/changes-panel';
 
 export function ProcessPage() {
   const { processId = '' } = useParams();
@@ -114,8 +111,16 @@ export function ProcessPage() {
         <ReviewPanel graph={g} readiness={r} />
       </div>
 
-      <Tabs defaultValue="map" className="mt-6">
+      {g.kind === 'to_be' && (
+        <p className="mt-4 rounded-md bg-violet-50 px-3 py-2 text-sm text-violet-900 dark:bg-violet-950 dark:text-violet-100">
+          This is a proposed future state, not the current process. The documented As-Is remains in
+          force. AI-designed changes are marked "AI inferred" until someone confirms them.
+        </p>
+      )}
+
+      <Tabs key={g.id} defaultValue={g.kind === 'to_be' ? 'changes' : 'map'} className="mt-6">
         <TabsList>
+          {g.kind === 'to_be' && <TabsTrigger value="changes">As-Is vs To-Be</TabsTrigger>}
           <TabsTrigger value="map">Process map</TabsTrigger>
           <TabsTrigger value="details">Details</TabsTrigger>
           <TabsTrigger value="issues">Issues</TabsTrigger>
@@ -124,6 +129,11 @@ export function ProcessPage() {
           <TabsTrigger value="versions">Versions</TabsTrigger>
         </TabsList>
 
+        {g.kind === 'to_be' && (
+          <TabsContent value="changes">
+            <ChangesPanel graph={g} onSelectStep={setSelectedStepId} />
+          </TabsContent>
+        )}
         <TabsContent value="map">
           <Card className="h-[70vh] min-h-[480px] overflow-hidden py-0">
             <ProcessMap
@@ -247,7 +257,11 @@ function ProcessHeader({
       <div className="flex flex-wrap items-center gap-3">
         <h1 className="text-2xl font-semibold tracking-tight">{p.name}</h1>
         <StatusBadge status={g.status} />
-        {g.kind === 'to_be' && <span className="text-muted-foreground text-sm">To-Be</span>}
+        {g.kind === 'to_be' && (
+          <span className="rounded-md bg-violet-100 px-2 py-0.5 text-xs font-medium text-violet-900 dark:bg-violet-950 dark:text-violet-200">
+            To-Be design
+          </span>
+        )}
         {p.archivedAt && (
           <span className="text-muted-foreground text-sm">Archived {formatDate(p.archivedAt)}</span>
         )}
@@ -259,6 +273,7 @@ function ProcessHeader({
             editing={editing}
             onToggleEdit={onToggleEdit}
           />
+          {r.canDesignToBe && <DesignToBeButton process={p} graph={g} />}
           <ProcessDownloadMenu versionId={g.id} slug={p.slug} />
         </div>
       </div>
@@ -289,7 +304,7 @@ function ProcessHeader({
               <SelectContent>
                 {p.versions.map((v) => (
                   <SelectItem key={v.id} value={v.id}>
-                    v{v.versionNumber} · {humanize(v.status)}
+                    {v.kind === 'to_be' ? 'To-Be ' : ''}v{v.versionNumber} · {humanize(v.status)}
                   </SelectItem>
                 ))}
               </SelectContent>

@@ -21,6 +21,19 @@ Move resolved notes to `docs/notes/` or `docs/decisions/` once they are settled.
 
 -->
 
+## 2026-10-03 — Smart upload + To-Be design
+
+**Done:**
+- Smart bulk upload (Admin → Knowledge bases): drop up to 50 files; AI picks knowledge base, category, title, version, effective date (confidence + reason); low confidence / no fit → Inbox for review; duplicates rejected; filename rules if the AI call fails. KB upload card defaults to "Auto-detect"
+- To-Be design: "Design To-Be" on the current As-Is → choose opportunities + goals → AI proposes typed changes (modify/add/remove steps, connections, rules) → applied to a To-Be draft with a change log (rationale + opportunity). As-Is vs To-Be tab with both maps highlighted (opens on first change); To-Be PDF pack includes the design section
+- Migration `0005_smart_upload_and_to_be`
+- Verified with the real model: correct filing of 4 mixed files; To-Be implemented 2 opportunities and kept the call-back and sanctions controls as instructed
+- Tests: API 62, agent 24, knowledge 9, diagram 5, web 1
+
+**Still open:**
+- To-Be issues/automation tabs reuse the same analysis (works, but rarely needed on a To-Be)
+- Phase 6 (Entra ID & hardening) deferred by decision
+
 ## 2026-10-03 — Phase 5 (Issues & automation opportunities)
 
 **Done:**

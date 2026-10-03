@@ -10,3 +10,6 @@ export { aiAnalysis } from './analysis/ai-analysis.js';
 export type { Findings, IssueFinding, OpportunityFinding } from './analysis/types.js';
 export { graphOutline } from './analysis/outline.js';
 export { LlmDocumentClassifier } from './knowledge-classifier.js';
+export { designToBe, type DesignOpportunity } from './design/designer.js';
+export { applyDesign, type AppliedDesign } from './design/apply.js';
+export { DesignResult, type DesignOp } from './design/ops.js';

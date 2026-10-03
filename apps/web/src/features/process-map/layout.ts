@@ -4,7 +4,13 @@ import { NODE_SIZE, type DiagramGraph, type GraphLayout, type Point } from '@pro
 
 export { layoutGraph } from '@process-ai/diagram';
 
-export type StepNodeData = { step: ProcessStep; marker?: { issues: number; opportunities: number } };
+export type Highlight = 'added' | 'modified' | 'removed';
+export type StepNodeData = {
+  step: ProcessStep;
+  marker?: { issues: number; opportunities: number };
+  /** As-Is vs To-Be comparison. */
+  highlight?: Highlight;
+};
 export type StepNode = Node<StepNodeData>;
 export type RoutedEdgeData = { points: Point[]; edgeType: EdgeType };
 

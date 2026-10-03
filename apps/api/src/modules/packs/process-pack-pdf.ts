@@ -1,7 +1,13 @@
 import PDFDocument from 'pdfkit';
 import type { Scene } from '@process-ai/diagram';
 import { edgeStyle, palette } from '@process-ai/diagram';
-import type { Issue, Opportunity, ProcessDetail, Provenance, VersionGraph } from '@process-ai/shared';
+import type {
+  Issue,
+  Opportunity,
+  ProcessDetail,
+  Provenance,
+  VersionGraph,
+} from '@process-ai/shared';
 import { drawScene, drawSceneSlice } from './pdf-scene.js';
 
 type Doc = PDFKit.PDFDocument;
@@ -51,6 +57,13 @@ export interface PackInput {
   process: ProcessDetail;
   graph: VersionGraph;
   scene: Scene;
+  /** To-Be versions: what the design changed relative to the As-Is, and why. */
+  design?: {
+    basedOnVersion: number | null;
+    goals: string | null;
+    summary: string | null;
+    changes: { description: string; rationale: string; opportunity: string | null }[];
+  };
   /** Accepted recommendations (shown separately from the documented process). */
   findings?: { issues: Issue[]; opportunities: Opportunity[] };
   generatedBy: string;
@@ -81,6 +94,7 @@ export function buildProcessPackPdf(input: PackInput): Promise<Buffer> {
   });
 
   coverPage(doc, input);
+  designSection(doc, input);
   mapPage(doc, input);
   stepsSection(doc, g);
   pathsSection(doc, g);
@@ -163,7 +177,9 @@ function coverPage(doc: Doc, { process: p, graph: g, generatedBy, generatedAt }:
     .font('Helvetica-Bold')
     .fontSize(9)
     .fillColor(C.muted)
-    .text('PROCESS PACK', { characterSpacing: 1.5 });
+    .text(g.kind === 'to_be' ? 'TO-BE DESIGN · PROCESS PACK' : 'PROCESS PACK', {
+      characterSpacing: 1.5,
+    });
   doc.moveDown(0.4);
   doc.font('Helvetica-Bold').fontSize(24).fillColor(C.text).text(p.name);
   doc.moveDown(0.2);
@@ -222,6 +238,34 @@ function coverPage(doc: Doc, { process: p, graph: g, generatedBy, generatedAt }:
 const READABLE_SCALE = 0.62;
 const MAX_DETAIL_SCALE = 0.8;
 const TILE_OVERLAP = 80;
+
+function designSection(doc: Doc, { graph: g, design }: PackInput) {
+  if (g.kind !== 'to_be' || !design) return;
+  newPage(doc);
+  heading(doc, 'To-Be design');
+  para(
+    doc,
+    `Proposed future state${design.basedOnVersion ? `, based on As-Is version ${design.basedOnVersion}` : ''}. It is not the current process until it is implemented.`,
+    { color: C.muted, size: 9.5 },
+  );
+  if (design.goals) {
+    doc.moveDown(0.5);
+    fields(doc, [['Goals', design.goals]]);
+  }
+  if (design.summary) {
+    doc.moveDown(0.3);
+    para(doc, design.summary);
+  }
+  if (design.changes.length) {
+    heading(doc, 'Changes from the As-Is');
+    table(
+      doc,
+      ['Change', 'Why', 'Implements'],
+      design.changes.map((c) => [c.description, c.rationale, c.opportunity ?? '—']),
+      ['*', '*', 140],
+    );
+  }
+}
 
 function mapPage(doc: Doc, { scene }: PackInput) {
   const [pageW, pageH] = A3_LANDSCAPE;
@@ -434,16 +478,25 @@ function recommendationsSection(doc: Doc, g: VersionGraph, findings: PackInput['
     return s ? `${s.stepKey} ${s.name}` : 'Whole process';
   };
   heading(doc, 'Recommendations');
-  para(doc, 'Accepted by the process owner. These are proposals for improvement, not part of the documented current process.', {
-    color: C.muted,
-    size: 9,
-  });
+  para(
+    doc,
+    'Accepted by the process owner. These are proposals for improvement, not part of the documented current process.',
+    {
+      color: C.muted,
+      size: 9,
+    },
+  );
   doc.moveDown(0.3);
   if (issues.length) {
     table(
       doc,
       ['Issue', 'Step', 'Category', 'Severity'],
-      issues.map((i) => [`${i.title}\n${i.description}`, stepRef(i.stepId), humanize(i.category), humanize(i.severity)]),
+      issues.map((i) => [
+        `${i.title}\n${i.description}`,
+        stepRef(i.stepId),
+        humanize(i.category),
+        humanize(i.severity),
+      ]),
       ['*', 150, 90, 60],
     );
   }

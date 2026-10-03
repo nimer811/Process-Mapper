@@ -36,7 +36,9 @@ export function VersionsTable({
       <TableBody>
         {versions.map((v) => (
           <TableRow key={v.id}>
-            <TableCell className="font-medium tabular-nums">v{v.versionNumber}</TableCell>
+            <TableCell className="font-medium tabular-nums">
+              {v.kind === 'to_be' ? 'To-Be ' : ''}v{v.versionNumber}
+            </TableCell>
             <TableCell>
               <StatusBadge status={v.status} />
             </TableCell>

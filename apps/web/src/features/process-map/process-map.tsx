@@ -11,7 +11,7 @@ import {
 import '@xyflow/react/dist/style.css';
 import type { VersionGraph } from '@process-ai/shared';
 import { Skeleton } from '@/components/ui/skeleton';
-import { layoutGraph, toFlow, type StepNode } from './layout';
+import { layoutGraph, toFlow, type Highlight, type StepNode } from './layout';
 import { useColorScheme } from '@/lib/theme';
 import { nodeTypes } from './nodes';
 import { edgeTypes } from './routed-edge';
@@ -22,9 +22,19 @@ interface ProcessMapProps {
   onSelectStep: (stepId: string | null) => void;
   /** Open issues / opportunities per step, shown as small markers on nodes. */
   markers?: Record<string, { issues: number; opportunities: number }>;
+  highlights?: Record<string, Highlight>;
+  /** Open the map centred on this step instead of the start. */
+  focusStepId?: string;
 }
 
-export function ProcessMap({ graph, selectedStepId, onSelectStep, markers }: ProcessMapProps) {
+export function ProcessMap({
+  graph,
+  selectedStepId,
+  onSelectStep,
+  markers,
+  highlights,
+  focusStepId,
+}: ProcessMapProps) {
   const colorScheme = useColorScheme();
   const containerRef = useRef<HTMLDivElement>(null);
   const layout = useQuery({
@@ -40,11 +50,11 @@ export function ProcessMap({ graph, selectedStepId, onSelectStep, markers }: Pro
       nodes: nodes.map((n): StepNode => ({
         ...n,
         selected: n.id === selectedStepId,
-        data: { ...n.data, marker: markers?.[n.id] },
+        data: { ...n.data, marker: markers?.[n.id], highlight: highlights?.[n.id] },
       })),
       edges,
     };
-  }, [graph, layout.data, selectedStepId, markers]);
+  }, [graph, layout.data, selectedStepId, markers, highlights]);
 
   if (!flow) return <Skeleton className="h-full w-full" />;
 
@@ -56,14 +66,12 @@ export function ProcessMap({ graph, selectedStepId, onSelectStep, markers }: Pro
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
         colorMode={colorScheme}
-        onInit={(instance) => openReadable(instance, containerRef.current)}
+        onInit={(instance) => openReadable(instance, containerRef.current, focusStepId)}
         nodesDraggable={false}
         nodesConnectable={false}
         edgesFocusable={false}
         onNodeClick={(_, node) => onSelectStep(node.id)}
         onPaneClick={() => onSelectStep(null)}
-        fitView
-        fitViewOptions={{ padding: 0.15 }}
         minZoom={0.2}
         proOptions={{ hideAttribution: true }}
       >
@@ -84,19 +92,45 @@ const READABLE_ZOOM = 0.8;
  * Fit the whole process when it is small enough to stay readable; otherwise open at a readable
  * zoom anchored on the start step, so users pan along the flow instead of squinting at it.
  */
-function openReadable(instance: ReactFlowInstance<StepNode>, container: HTMLDivElement | null) {
-  if (!container || instance.getZoom() >= READABLE_ZOOM) return;
+function openReadable(
+  instance: ReactFlowInstance<StepNode>,
+  container: HTMLDivElement | null,
+  focusStepId?: string,
+) {
+  // Computed from the node positions directly (not React Flow's own fit, which may not have run yet),
+  // so every map opens the same way.
   const nodes = instance.getNodes();
-  const start = nodes.find((n) => n.data.step.type === 'start') ?? nodes[0];
-  if (!start) return;
+  if (!container || !nodes.length) return;
+  const left = Math.min(...nodes.map((n) => n.position.x));
+  const right = Math.max(...nodes.map((n) => n.position.x + (n.width ?? 0)));
   const top = Math.min(...nodes.map((n) => n.position.y));
   const bottom = Math.max(...nodes.map((n) => n.position.y + (n.height ?? 0)));
+  const pad = 48;
+  const fit = Math.min(
+    (container.clientWidth - pad * 2) / (right - left || 1),
+    (container.clientHeight - pad * 2) / (bottom - top || 1),
+    1,
+  );
+  if (fit >= READABLE_ZOOM) {
+    // Small enough to show whole and readable: centre it.
+    instance.setViewport({
+      x: (container.clientWidth - (right - left) * fit) / 2 - left * fit,
+      y: (container.clientHeight - (bottom - top) * fit) / 2 - top * fit,
+      zoom: fit,
+    });
+    return;
+  }
+  const focus = focusStepId ? nodes.find((n) => n.id === focusStepId) : undefined;
+  const start = nodes.find((n) => n.data.step.type === 'start') ?? nodes[0]!;
   const graphHeight = (bottom - top) * READABLE_ZOOM;
   const y =
     graphHeight < container.clientHeight
       ? (container.clientHeight - graphHeight) / 2 - top * READABLE_ZOOM
       : 72 - top * READABLE_ZOOM;
-  instance.setViewport({ x: 32 - start.position.x * READABLE_ZOOM, y, zoom: READABLE_ZOOM });
+  const x = focus
+    ? container.clientWidth / 3 - (focus.position.x + (focus.width ?? 0) / 2) * READABLE_ZOOM
+    : 32 - start.position.x * READABLE_ZOOM;
+  instance.setViewport({ x, y, zoom: READABLE_ZOOM });
 }
 
 function MapLegend() {

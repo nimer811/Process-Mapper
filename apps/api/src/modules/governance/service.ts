@@ -159,17 +159,19 @@ export async function computeBlockers(db: Db, ctx: VersionContext): Promise<Bloc
   return blockers;
 }
 
-async function openVersionExists(db: Db, processId: string, exceptId?: string) {
+/** One As-Is and one To-Be can be in progress at a time. */
+export async function openVersionExists(db: Db, processId: string, kind: 'as_is' | 'to_be') {
   const open = await db
     .select({ id: processVersions.id })
     .from(processVersions)
     .where(
       and(
         eq(processVersions.processId, processId),
+        eq(processVersions.kind, kind),
         inArray(processVersions.status, ['draft', 'under_validation']),
       ),
     );
-  return open.some((v) => v.id !== exceptId);
+  return open.length > 0;
 }
 
 export async function readiness(db: Db, ctx: VersionContext): Promise<Readiness> {
@@ -187,7 +189,13 @@ export async function readiness(db: Db, ctx: VersionContext): Promise<Readiness>
       !ctx.process.archivedAt &&
       (ctx.actor.isAdmin || ctx.actor.isOwner) &&
       isCurrent &&
-      !(await openVersionExists(db, ctx.process.id)),
+      !(await openVersionExists(db, ctx.process.id, 'as_is')),
+    canDesignToBe:
+      !ctx.process.archivedAt &&
+      (ctx.actor.isAdmin || ctx.actor.isOwner) &&
+      isCurrent &&
+      ctx.version.kind === 'as_is' &&
+      !(await openVersionExists(db, ctx.process.id, 'to_be')),
     canArchive: ctx.actor.isAdmin && !ctx.process.archivedAt,
     blockers,
   };
@@ -225,14 +233,12 @@ export async function transition(
     if (action === 'validate') Object.assign(set, { validatedBy: userId, validatedAt: now });
     if (action === 'approve') Object.assign(set, { approvedBy: userId, approvedAt: now });
     await tx.update(processVersions).set(set).where(eq(processVersions.id, v.id));
-    await tx
-      .insert(validationEvents)
-      .values({
-        versionId: v.id,
-        action: EVENT[action],
-        actorUserId: userId,
-        comment: comment?.trim() || null,
-      });
+    await tx.insert(validationEvents).values({
+      versionId: v.id,
+      action: EVENT[action],
+      actorUserId: userId,
+      comment: comment?.trim() || null,
+    });
 
     if (action === 'validate') {
       // The owner vouches for the content: everything stated or documented becomes confirmed.
@@ -244,12 +250,15 @@ export async function transition(
             and(eq(table.versionId, v.id), inArray(table.provenance, ['stated', 'documented'])),
           );
       }
-      // This version becomes current; the one it replaces is archived.
-      const previous = ctx.process.currentVersionId;
-      await tx
-        .update(processes)
-        .set({ currentVersionId: v.id })
-        .where(eq(processes.id, ctx.process.id));
+      // A validated As-Is becomes current and archives the one it replaces. To-Be designs never
+      // replace the documented current state.
+      const previous = v.kind === 'as_is' ? ctx.process.currentVersionId : v.id;
+      if (v.kind === 'as_is') {
+        await tx
+          .update(processes)
+          .set({ currentVersionId: v.id })
+          .where(eq(processes.id, ctx.process.id));
+      }
       if (previous && previous !== v.id) {
         await tx
           .update(processVersions)
@@ -284,14 +293,12 @@ export async function archiveProcess(db: Db, processId: string, userId: string, 
         .update(processVersions)
         .set({ status: 'archived' })
         .where(eq(processVersions.id, v.id));
-      await tx
-        .insert(validationEvents)
-        .values({
-          versionId: v.id,
-          action: 'archived',
-          actorUserId: userId,
-          comment: comment?.trim() || 'Process archived',
-        });
+      await tx.insert(validationEvents).values({
+        versionId: v.id,
+        action: 'archived',
+        actorUserId: userId,
+        comment: comment?.trim() || 'Process archived',
+      });
     }
   });
 }
@@ -309,23 +316,57 @@ export async function createVersion(
     throw new GovernanceError(403, 'Only the process owner or an admin can start a new version');
   if (ctx.process.currentVersionId !== ctx.version.id)
     throw new GovernanceError(409, 'New versions start from the current version');
-  if (await openVersionExists(db, ctx.process.id))
+  if (await openVersionExists(db, ctx.process.id, 'as_is'))
     throw new GovernanceError(409, 'There is already a version in progress for this process');
 
   return db.transaction(async (tx) => {
-    const src = ctx.version;
-    const [{ max }] = (await tx
+    const next = await cloneVersion(tx as unknown as Db, ctx.version, {
+      kind: 'as_is',
+      changeSummary,
+      userId,
+    });
+    await tx
+      .insert(validationEvents)
+      .values({
+        versionId: next.id,
+        action: 'reopened',
+        actorUserId: userId,
+        comment: changeSummary,
+      });
+    return next;
+  });
+}
+
+/**
+ * Copies a version's content (steps, connections, rules, systems and provenance) into a new draft
+ * of the given kind. Step keys are kept, so versions — including As-Is vs To-Be — can be compared.
+ * Call inside a transaction.
+ */
+export async function cloneVersion(
+  tx: Db,
+  src: typeof processVersions.$inferSelect,
+  opts: {
+    kind: 'as_is' | 'to_be';
+    changeSummary: string;
+    userId: string;
+    designGoals?: string | null;
+  },
+) {
+  {
+    const { kind, changeSummary, userId } = opts;
+    const [last] = await tx
       .select({ max: processVersions.versionNumber })
       .from(processVersions)
-      .where(eq(processVersions.processId, src.processId))
+      .where(and(eq(processVersions.processId, src.processId), eq(processVersions.kind, kind)))
       .orderBy(desc(processVersions.versionNumber))
-      .limit(1)) as [{ max: number }];
+      .limit(1);
     const [next] = await tx
       .insert(processVersions)
       .values({
         processId: src.processId,
-        versionNumber: max + 1,
-        kind: src.kind,
+        versionNumber: (last?.max ?? 0) + 1,
+        kind,
+        designGoals: opts.designGoals ?? null,
         status: 'draft',
         basedOnVersionId: src.id,
         description: src.description,
@@ -407,11 +448,8 @@ export async function createVersion(
       const { id: _id, ...rest } = ev;
       await tx.insert(evidence).values({ ...rest, versionId: nv, entityId });
     }
-    await tx
-      .insert(validationEvents)
-      .values({ versionId: nv, action: 'reopened', actorUserId: userId, comment: changeSummary });
     return next!;
-  });
+  }
 }
 
 // ---------- History & evidence ----------

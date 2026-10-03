@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import {
+  DesignChangeType,
   EdgeType,
   ExecutionMode,
   FindingSource,
@@ -44,6 +45,8 @@ export const Readiness = z.object({
   canEdit: z.boolean(),
   canAssignOwner: z.boolean(),
   canCreateVersion: z.boolean(),
+  /** Owner/admin viewing the current As-Is, with no To-Be design in progress. */
+  canDesignToBe: z.boolean(),
   canArchive: z.boolean(),
   blockers: z.array(Blocker),
 });
@@ -215,3 +218,31 @@ export const IssueInput = z.object({
   description: z.string().trim().min(3).max(2000),
 });
 export type IssueInput = z.infer<typeof IssueInput>;
+
+// ---- To-Be design ----
+
+
+export const ToBeInput = z.object({
+  /** Opportunities to implement (accepted ones are suggested by default). */
+  opportunityIds: z.array(z.uuid()).max(20),
+  goals: z.string().trim().max(2000).optional(),
+});
+export type ToBeInput = z.infer<typeof ToBeInput>;
+
+export const DesignChange = z.object({
+  id: z.uuid(),
+  changeType: DesignChangeType,
+  stepKey: z.string().nullable(),
+  description: z.string(),
+  rationale: z.string(),
+  opportunity: z.object({ id: z.uuid(), title: z.string() }).nullable(),
+});
+export type DesignChange = z.infer<typeof DesignChange>;
+
+export const DesignDetail = z.object({
+  basedOn: z.object({ id: z.uuid(), versionNumber: z.number().int(), status: VersionStatus }).nullable(),
+  goals: z.string().nullable(),
+  summary: z.string().nullable(),
+  changes: z.array(DesignChange),
+});
+export type DesignDetail = z.infer<typeof DesignDetail>;

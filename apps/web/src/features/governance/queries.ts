@@ -43,7 +43,7 @@ export function useRefreshProcess() {
   const qc = useQueryClient();
   return () =>
     Promise.all(
-      ['process', 'processes', 'version', 'readiness', 'history', 'evidence', 'compare', 'interviews'].map((k) =>
+      ['process', 'processes', 'version', 'readiness', 'history', 'evidence', 'compare', 'interviews', 'design', 'findings'].map((k) =>
         qc.invalidateQueries({ queryKey: [k] }),
       ),
     );

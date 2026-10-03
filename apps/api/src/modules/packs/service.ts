@@ -5,6 +5,7 @@ import type { CurrentUser } from '@process-ai/shared';
 import { getProcess, getVersionGraph, listProcesses } from '../processes/service.js';
 import { buildProcessPackPdf, packFileBase } from './process-pack-pdf.js';
 import { listFindings } from '../analysis/service.js';
+import { asc, automationOpportunities, designChanges, eq, processVersions } from '@process-ai/db';
 
 /** Everything needed to export one version, or null if the user can't see it. */
 async function loadVersion(db: Db, user: CurrentUser, versionId: string) {
@@ -14,7 +15,8 @@ async function loadVersion(db: Db, user: CurrentUser, versionId: string) {
   if (!process) return null;
   const { scene, svg } = await renderProcessSvg(graph, `${process.name} — v${graph.versionNumber}`);
   const findings = await listFindings(db, graph.id);
-  return { process, graph, scene, svg, findings, fileBase: packFileBase(process, graph) };
+  const design = graph.kind === 'to_be' ? await loadDesign(db, graph.id) : undefined;
+  return { process, graph, scene, svg, findings, design, fileBase: packFileBase(process, graph) };
 }
 
 export async function exportMapSvg(db: Db, user: CurrentUser, versionId: string) {
@@ -76,5 +78,33 @@ export async function exportDepartmentPack(db: Db, user: CurrentUser, department
   return {
     filename: `${departmentSlug}-process-pack-${date}.zip`,
     body: Buffer.from(zipSync(files, { level: 6 })),
+  };
+}
+
+/** Design summary and change log of a To-Be version, for its process pack. */
+async function loadDesign(db: Db, versionId: string) {
+  const version = await db.query.processVersions.findFirst({
+    where: eq(processVersions.id, versionId),
+  });
+  const base = version?.basedOnVersionId
+    ? await db.query.processVersions.findFirst({
+        where: eq(processVersions.id, version.basedOnVersionId),
+      })
+    : null;
+  const rows = await db
+    .select({ c: designChanges, opp: automationOpportunities.title })
+    .from(designChanges)
+    .leftJoin(automationOpportunities, eq(automationOpportunities.id, designChanges.opportunityId))
+    .where(eq(designChanges.versionId, versionId))
+    .orderBy(asc(designChanges.createdAt));
+  return {
+    basedOnVersion: base?.versionNumber ?? null,
+    goals: version?.designGoals ?? null,
+    summary: version?.designSummary ?? null,
+    changes: rows.map(({ c, opp }) => ({
+      description: c.description,
+      rationale: c.rationale,
+      opportunity: opp,
+    })),
   };
 }

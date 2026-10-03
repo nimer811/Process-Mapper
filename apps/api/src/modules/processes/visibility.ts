@@ -27,7 +27,7 @@ export function canViewVersion(
  * otherwise the newest version the user may see.
  */
 export function pickDefaultVersion<
-  V extends { id: string; versionNumber: number; status: VersionStatus; createdBy: string | null },
+  V extends { id: string; versionNumber: number; status: VersionStatus; createdBy: string | null; kind?: 'as_is' | 'to_be' },
 >(
   user: CurrentUser,
   versions: V[],
@@ -38,7 +38,8 @@ export function pickDefaultVersion<
   if (current) return current;
   return (
     [...versions]
-      .sort((a, b) => b.versionNumber - a.versionNumber)
+      // Prefer the documented current state (As-Is) over To-Be designs.
+      .sort((a, b) => Number(a.kind === 'to_be') - Number(b.kind === 'to_be') || b.versionNumber - a.versionNumber)
       .find((v) => canViewVersion(user, v, ctx)) ?? null
   );
 }
