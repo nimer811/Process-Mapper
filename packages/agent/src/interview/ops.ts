@@ -125,7 +125,9 @@ export const SetFocus = z.object({
   step: StepRef,
 });
 
-export const Op = z.discriminatedUnion('op', [
+// A plain union (JSON Schema anyOf): OpenAI strict structured output rejects oneOf, which
+// discriminatedUnion produces. The literal `op` field still tells the variants apart.
+export const Op = z.union([
   SetProcessField,
   AddStep,
   UpdateStep,

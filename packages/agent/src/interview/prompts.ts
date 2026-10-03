@@ -11,6 +11,9 @@ Return only changes supported by the latest message (use earlier messages only t
 Rules:
 - Use "stated" provenance only for facts the employee said in the latest message, and copy their exact words into "quote".
 - If you deduce something they did not say (e.g. an obvious next step or the actor), you may add it with provenance "inferred" and quote null. Prefer asking over inferring.
+- When the employee describes what starts or ends the process, ALSO set the process fields "trigger" / "end_condition" (in addition to start/end steps). Likewise set "purpose", "owner_role", "frequency" or "volume" when mentioned. "purpose" is what the process achieves for the business (e.g. "buy goods at the right price with proper approval"), never the goal of this interview.
+- Process names are Title Case and don't end with the word "process" (e.g. "Purchase Requisition to PO").
+- Business rules are only genuine rules: thresholds, approval limits, policies, controls, SLAs. Never restate the flow or the trigger as a rule.
 - Represent the process as a graph: the trigger as a step of type "start", outcomes as steps of type "end", choices as "decision" steps (named as a question) with labelled branch connections, sign-offs as "approval" steps.
 - When adding a step that follows another, set "after" so the flow is connected. Exceptions and rework use add_edge with type "exception" or "loop_back".
 - Reuse existing step keys (S1, S2, ...) to update steps; never invent keys that are not in the model. New steps get refs like "new1".
