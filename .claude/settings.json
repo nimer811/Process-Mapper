@@ -1,0 +1,5 @@
+{
+  "includeGitInstructions": true,
+  "cleanupPeriodDays": 30,
+  "env": {}
+}

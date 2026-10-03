@@ -1,0 +1,48 @@
+# Local environment.
+#   pnpm db:up      → Postgres + pgvector only (for `pnpm dev`)
+#   pnpm docker:up  → Postgres + the production app image on http://localhost:8080
+name: process-ai
+
+services:
+  db:
+    image: pgvector/pgvector:pg17
+    environment:
+      POSTGRES_USER: process_ai
+      POSTGRES_PASSWORD: process_ai
+      POSTGRES_DB: process_ai
+    ports:
+      - '5433:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U process_ai -d process_ai']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  app:
+    profiles: ['app']
+    build: .
+    image: process-ai:local
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://process_ai:process_ai@db:5432/process_ai
+      AUTH_MODE: dev
+      ALLOW_DEV_AUTH: 'true' # local only — Entra ID replaces this in Phase 6
+      MIGRATE_ON_START: 'true'
+      SEED_ON_START: 'true'
+      LOG_LEVEL: info
+    volumes:
+      - storage:/app/storage
+    ports:
+      - '8080:3000'
+
+volumes:
+  pgdata:
+  storage:
