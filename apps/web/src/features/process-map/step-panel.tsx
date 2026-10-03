@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react';
 import type { ProcessStep, VersionGraph } from '@process-ai/shared';
-import { ArrowRight, Lightbulb, TriangleAlert } from 'lucide-react';
+import { ArrowRight, History, Lightbulb, Pencil, TriangleAlert } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { EvidenceList } from '@/features/governance/evidence-list';
 import {
   Sheet,
   SheetContent,
@@ -19,13 +21,15 @@ interface StepPanelProps {
   step: ProcessStep | null;
   onClose: () => void;
   onSelectStep: (stepId: string) => void;
+  /** Present when the viewer may edit this version. */
+  onEdit?: (step: ProcessStep) => void;
 }
 
-export function StepPanel({ graph, step, onClose, onSelectStep }: StepPanelProps) {
+export function StepPanel({ graph, step, onClose, onSelectStep, onEdit }: StepPanelProps) {
   return (
     <Sheet open={!!step} onOpenChange={(open) => !open && onClose()}>
       <SheetContent className="w-full gap-0 sm:max-w-md">
-        {step && <StepDetails graph={graph} step={step} onSelectStep={onSelectStep} />}
+        {step && <StepDetails graph={graph} step={step} onSelectStep={onSelectStep} onEdit={onEdit} />}
       </SheetContent>
     </Sheet>
   );
@@ -35,10 +39,12 @@ function StepDetails({
   graph,
   step,
   onSelectStep,
+  onEdit,
 }: {
   graph: VersionGraph;
   step: ProcessStep;
   onSelectStep: (id: string) => void;
+  onEdit?: (step: ProcessStep) => void;
 }) {
   const rules = graph.rules.filter((r) => r.stepId === step.id);
   const stepsById = new Map(graph.steps.map((s) => [s.id, s]));
@@ -55,6 +61,12 @@ function StepDetails({
           <ProvenanceBadge provenance={step.provenance} />
         </div>
         <SheetTitle className="text-lg">{step.name}</SheetTitle>
+        {onEdit && (
+          <Button variant="outline" size="sm" className="w-fit" onClick={() => onEdit(step)}>
+            <Pencil />
+            Edit step
+          </Button>
+        )}
         {step.description && <SheetDescription>{step.description}</SheetDescription>}
       </SheetHeader>
 
@@ -146,6 +158,12 @@ function StepDetails({
             icon={<Lightbulb className="size-4 text-sky-600" />}
           >
             <Muted>Identified after validation (Phase 5).</Muted>
+          </Section>
+
+          <Separator />
+
+          <Section title="Where did this come from?" icon={<History className="size-4" />}>
+            <EvidenceList versionId={graph.id} entityId={step.id} />
           </Section>
         </div>
       </ScrollArea>

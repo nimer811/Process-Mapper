@@ -265,6 +265,8 @@ describe('AI interview', () => {
       .from(interviewSessions)
       .where(eq(interviewSessions.id, interview.id));
     expect(session).toMatchObject({ status: 'completed', stage: 'completed' });
+    // Confirming the summary submits the draft for validation.
+    expect((await graph()).status).toBe('under_validation');
     expect((await say('one more thing')).res.statusCode).toBe(409);
   });
 

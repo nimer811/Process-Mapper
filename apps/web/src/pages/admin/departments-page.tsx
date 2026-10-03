@@ -64,16 +64,26 @@ export function DepartmentsAdminPage() {
                     <TableCell>
                       <div className="font-medium">{d.name}</div>
                       {d.description && (
-                        <div className="text-muted-foreground max-w-md truncate text-xs">{d.description}</div>
+                        <div className="text-muted-foreground max-w-md truncate text-xs">
+                          {d.description}
+                        </div>
                       )}
                     </TableCell>
                     <TableCell className="font-mono text-xs">{d.slug}</TableCell>
                     <TableCell className="text-right tabular-nums">{d.processCount}</TableCell>
                     <TableCell>
-                      {d.isActive ? <Badge variant="secondary">Active</Badge> : <Badge variant="outline">Inactive</Badge>}
+                      {d.isActive ? (
+                        <Badge variant="secondary">Active</Badge>
+                      ) : (
+                        <Badge variant="outline">Inactive</Badge>
+                      )}
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button variant="ghost" size="sm" onClick={() => setDialog({ open: true, department: d })}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setDialog({ open: true, department: d })}
+                      >
                         Edit
                       </Button>
                     </TableCell>

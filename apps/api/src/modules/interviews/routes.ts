@@ -17,6 +17,8 @@ import {
   type LlmGateway,
 } from '@process-ai/agent';
 import { getAccessibleSession, getInterviewDetail, listInterviews } from './service.js';
+import { validationEvents } from '@process-ai/db';
+import { loadVersionContext, transition } from '../governance/service.js';
 
 const IdParams = z.object({ id: z.uuid() });
 
@@ -171,10 +173,19 @@ export const interviewRoutes: FastifyPluginAsyncZod<{ db: Db; llm: LlmGateway | 
     '/interviews/:id/complete',
     { schema: { params: IdParams, response: { 200: InterviewMessage } } },
     async (request) => {
-      const { summary } = await load(request, request.params.id, true);
+      const { summary, user } = await load(request, request.params.id, true);
       if (summary.stage !== 'summary')
         throw app.httpErrors.conflict('Review the summary before completing the interview');
-      return requireEngine().complete(request.params.id);
+      const message = await requireEngine().complete(request.params.id);
+      // The interviewee confirmed the summary: record it and send the draft to the process owner.
+      await db
+        .insert(validationEvents)
+        .values({ versionId: summary.versionId, action: 'summary_confirmed', actorUserId: user.id });
+      const ctx = await loadVersionContext(db, user, summary.versionId);
+      if (ctx.version.status === 'draft') {
+        await transition(db, ctx, user.id, 'submit', 'Submitted after the interview summary was confirmed');
+      }
+      return message;
     },
   );
 };

@@ -21,6 +21,24 @@ Move resolved notes to `docs/notes/` or `docs/decisions/` once they are settled.
 
 -->
 
+## 2026-10-03 — Phase 4 (Validation, versioning & provenance)
+
+**Done:**
+- Lifecycle (rules in `apps/api/src/modules/governance/lifecycle.ts`): draft → under_validation (submit: interviewee/owner/admin) → validated (owner/admin) → approved (admin); return-to-draft needs a comment; archive whole process (admin)
+- Validation is blocked by AI-inferred or disputed steps/connections/rules, open SOP contradictions, or no owner; owner confirms/removes/resolves from the Review panel. Validating confirms stated/documented content, makes the version current and archives the one it replaces
+- Confirming an interview summary records `summary_confirmed` and submits the draft
+- Owner editing via forms (metadata, steps, connections, rules) → provenance confirmed + `manual_edit` evidence + audit
+- New version = copy of the current version (step keys, edges, rules, evidence); one open version per process; compare versions by step key
+- Step panel "Where did this come from?" (quotes, who, when, SOP citation, link to interview)
+- Home dashboard (awaiting my validation, interviews in progress, recently updated); Admin → Approvals; admins assign owners
+- Tests: API 47 (incl. full lifecycle), agent 18, knowledge 9, diagram 5, web 1. Browser walkthrough on Docker passed; demo data restored afterwards
+
+**Still open:**
+- Interview-created processes have no owner until an admin assigns one (shown in Approvals)
+- Follow-up interview on an existing process (to correct a returned draft) not built yet — edits are form-based
+
+**Next:** Phase 5 — Issues & automation opportunities (heuristics + AI analysis, kept separate from the As-Is)
+
 ## 2026-10-03 — Phase 3 (Knowledge base & SOP grounding)
 
 **Done:**
@@ -38,7 +56,6 @@ Move resolved notes to `docs/notes/` or `docs/decisions/` once they are settled.
 - Backlog: CI smoke test that builds and starts the Docker image (two packaging bugs only showed up there)
 - OCR for scanned PDFs not supported (flagged as failed with a clear message)
 
-**Next:** Phase 4 — Validation, versioning & provenance (summary confirm/correct, owner validation, admin approval, evidence drawer)
 
 ## 2026-10-03 — Phase 2 (AI interview engine) + PoC chat
 

@@ -124,6 +124,8 @@ export const ProcessDetail = z.object({
   slug: z.string(),
   department: z.object({ id: z.uuid(), name: z.string(), slug: z.string() }),
   owner: UserRef.nullable(),
+  createdBy: UserRef.nullable(),
+  archivedAt: z.iso.datetime().nullable(),
   defaultVersionId: z.uuid(),
   versions: z.array(VersionSummary),
 });
@@ -188,6 +190,8 @@ export const VersionGraph = z.object({
   updatedAt: z.iso.datetime(),
   validatedAt: z.iso.datetime().nullable(),
   approvedAt: z.iso.datetime().nullable(),
+  ownerRole: z.string().nullable(),
+  changeSummary: z.string().nullable(),
   steps: z.array(ProcessStep),
   edges: z.array(ProcessEdge),
   rules: z.array(BusinessRule),
@@ -196,6 +200,8 @@ export type VersionGraph = z.infer<typeof VersionGraph>;
 
 export const ProcessListQuery = z.object({
   department: z.string().optional(),
+  /** "me": only processes the current user owns. */
+  owner: z.literal('me').optional(),
   q: z.string().trim().max(200).optional(),
   status: VersionStatus.optional(),
 });

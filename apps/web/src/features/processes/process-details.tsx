@@ -1,4 +1,6 @@
-import type { VersionGraph } from '@process-ai/shared';
+import type { ProcessStep, VersionGraph } from '@process-ai/shared';
+import { Pencil, Trash2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import {
   Table,
   TableBody,
@@ -15,9 +17,13 @@ import { ProvenanceBadge } from './badges';
 export function StepTable({
   graph,
   onSelectStep,
+  onEdit,
+  onDelete,
 }: {
   graph: VersionGraph;
   onSelectStep: (id: string) => void;
+  onEdit?: (step: ProcessStep) => void;
+  onDelete?: (step: ProcessStep) => void;
 }) {
   return (
     <Table>
@@ -30,6 +36,7 @@ export function StepTable({
           <TableHead>Systems</TableHead>
           <TableHead>SLA</TableHead>
           <TableHead>Source</TableHead>
+          {onEdit && <TableHead className="w-20" />}
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -44,6 +51,28 @@ export function StepTable({
             <TableCell>
               <ProvenanceBadge provenance={s.provenance} />
             </TableCell>
+            {onEdit && (
+              <TableCell onClick={(e) => e.stopPropagation()} className="whitespace-nowrap">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label={`Edit ${s.stepKey}`}
+                  onClick={() => onEdit(s)}
+                >
+                  <Pencil />
+                </Button>
+                {onDelete && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label={`Remove ${s.stepKey}`}
+                    onClick={() => onDelete(s)}
+                  >
+                    <Trash2 />
+                  </Button>
+                )}
+              </TableCell>
+            )}
           </TableRow>
         ))}
       </TableBody>

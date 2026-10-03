@@ -86,6 +86,7 @@ export async function listProcesses(
       and(
         isNull(processes.archivedAt),
         query.department ? eq(departments.slug, query.department) : undefined,
+        query.owner === 'me' ? eq(processes.ownerUserId, user.id) : undefined,
       ),
     )
     .orderBy(processes.name);
@@ -173,6 +174,7 @@ export async function getProcess(
 
   const people = await usersById(db, [
     p.ownerUserId,
+    p.createdBy,
     ...versions.flatMap((v) => [v.createdBy, v.validatedBy, v.approvedBy]),
   ]);
   const ref = (id: string | null) => userRef(id ? people.get(id) : null);
@@ -183,6 +185,8 @@ export async function getProcess(
     slug: p.slug,
     department: row.department,
     owner: ref(p.ownerUserId),
+    createdBy: ref(p.createdBy),
+    archivedAt: isoOrNull(p.archivedAt),
     defaultVersionId: defaultVersion.id,
     versions: versions.map((v) => ({
       id: v.id,
@@ -253,6 +257,8 @@ export async function getVersionGraph(
     volume: v.volume,
     scopeNotes: v.scopeNotes,
     completenessScore: v.completenessScore,
+    ownerRole: v.ownerRole,
+    changeSummary: v.changeSummary,
     createdAt: iso(v.createdAt),
     updatedAt: iso(v.updatedAt),
     validatedAt: isoOrNull(v.validatedAt),

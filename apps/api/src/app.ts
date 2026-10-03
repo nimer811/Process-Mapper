@@ -16,6 +16,7 @@ import { documents, eq } from '@process-ai/db';
 import { ingestDocument, LocalFileStore, type Embedder, type FileStore } from '@process-ai/knowledge';
 import { createInlineQueue, createPgBossQueue, type JobQueue } from './lib/jobs.js';
 import { knowledgeRoutes, UPLOAD_LIMITS } from './modules/knowledge/routes.js';
+import { governanceRoutes } from './modules/governance/routes.js';
 import type { Config } from './config.js';
 import { registerErrorHandling } from './plugins/errors.js';
 import { authPlugin } from './plugins/auth.js';
@@ -101,6 +102,7 @@ export async function buildApp({ config, db, llm, store, jobs }: AppDeps, opts: 
       await api.register(packRoutes, { db });
       await api.register(interviewRoutes, { db, llm: gateway });
       await api.register(knowledgeRoutes, { db, store: fileStore, embedder, jobs: queue });
+      await api.register(governanceRoutes, { db });
     },
     { prefix: '/api/v1' },
   );
