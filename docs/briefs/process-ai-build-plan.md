@@ -501,6 +501,7 @@ REST + JSON, zod-validated, all under `/api/v1`. Errors use RFC 9457 problem-det
 | Evidence | `GET /versions/:id/evidence?entityId=` |
 | Issues & opportunities | `GET /versions/:id/issues` · `GET /versions/:id/opportunities` · `POST /versions/:id/analyse` · `PATCH /issues/:id` · `PATCH /opportunities/:id` (accept/dismiss) |
 | Documents | `POST /documents` (multipart) · `GET /documents?scope=&departmentId=&processId=` · `GET /documents/:id` · `GET /documents/:id/download` · `PATCH /documents/:id` · `DELETE /documents/:id` (soft) · `POST /documents/:id/reindex` · `POST /knowledge/search` (admin test tool) |
+| Process packs (added 2026-10-03) | `GET /versions/:id/pack.pdf` (process pack) · `GET /versions/:id/map.svg` (map only) · `GET /departments/:slug/pack.zip` (bulk: PDF + SVG per visible process, plus `index.csv`) |
 | Admin | `GET /admin/sessions` · `GET /admin/drafts` · `GET /admin/audit` |
 | Teams (Ph 7) | `POST /api/messages` (bot endpoint, Bot Service auth — not user JWT) |
 | Ops | `GET /health` · `GET /ready` |

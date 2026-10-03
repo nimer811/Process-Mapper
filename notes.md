@@ -36,6 +36,12 @@ Move resolved notes to `docs/notes/` or `docs/decisions/` once they are settled.
 - Issues / Automation / Documents tabs are placeholders until Phases 5 / 5 / 3
 - Map: swimlanes and BPMN export deferred
 
+**Added after Phase 1 (user request): process packs**
+- Download per process: PDF pack (cover/overview, map overview + tiled detail pages, steps, decisions/branches, rules, pain points, version history; DRAFT watermark when not validated) and standalone SVG map
+- Bulk per department: ZIP with a folder per visible process (PDF + SVG) and `index.csv`
+- Map rendering shared by web and API via `packages/diagram` (ELK layout → scene → SVG / pdfkit)
+- Known limit: PDF uses built-in Helvetica, so Arabic text won't render until an Arabic font is embedded
+
 **Next:** Phase 2 — AI interview engine (web)
 
 ## 2026-10-03 — Plan approved, Phase 0 (Foundation) complete

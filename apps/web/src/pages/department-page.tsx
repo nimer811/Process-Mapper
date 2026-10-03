@@ -7,6 +7,7 @@ import { ProcessTable } from '@/features/processes/process-table';
 import { ProcessFilters } from '@/features/processes/process-filters';
 import { EmptyProcesses } from '@/features/processes/empty-processes';
 import { useListParams } from '@/features/processes/use-list-params';
+import { DepartmentPackButton } from '@/features/processes/download-actions';
 
 export function DepartmentPage() {
   const { departmentSlug = '' } = useParams();
@@ -27,7 +28,11 @@ export function DepartmentPage() {
         </Link>{' '}
         / {department?.name}
       </nav>
-      <PageHeader title={department?.name ?? ''} description={department?.description ?? undefined} />
+      <PageHeader
+        title={department?.name ?? ''}
+        description={department?.description ?? undefined}
+        actions={processes.data?.length ? <DepartmentPackButton departmentSlug={departmentSlug} /> : null}
+      />
       <ProcessFilters q={q} status={status} onChange={update} />
       {processes.isPending ? (
         <Skeleton className="h-48 w-full" />

@@ -17,6 +17,7 @@ import { healthRoutes } from './modules/health/routes.js';
 import { authRoutes } from './modules/auth/routes.js';
 import { departmentRoutes } from './modules/departments/routes.js';
 import { processRoutes } from './modules/processes/routes.js';
+import { packRoutes } from './modules/packs/routes.js';
 
 export interface AppDeps {
   config: Config;
@@ -48,6 +49,7 @@ export async function buildApp({ config, db }: AppDeps, opts: FastifyServerOptio
       await api.register(authRoutes, { db, config });
       await api.register(departmentRoutes, { db });
       await api.register(processRoutes, { db });
+      await api.register(packRoutes, { db });
     },
     { prefix: '/api/v1' },
   );

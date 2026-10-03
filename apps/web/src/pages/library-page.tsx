@@ -8,6 +8,7 @@ import { ProcessTable } from '@/features/processes/process-table';
 import { ProcessFilters } from '@/features/processes/process-filters';
 import { EmptyProcesses } from '@/features/processes/empty-processes';
 import { useListParams } from '@/features/processes/use-list-params';
+import { DepartmentPackButton } from '@/features/processes/download-actions';
 
 export function LibraryPage() {
   const { q, status, query, update } = useListParams();
@@ -33,17 +34,20 @@ export function LibraryPage() {
           {groups.map(({ department, items }) => (
             <Card key={department.id} className="gap-0 py-0">
               <CardHeader className="border-b py-3">
-                <CardTitle className="flex items-center justify-between text-base">
+                <CardTitle className="flex flex-wrap items-center justify-between gap-2 text-base">
                   <Link to={`/library/${department.slug}`} className="hover:underline">
                     {department.name}
                   </Link>
-                  <Link
-                    to={`/library/${department.slug}`}
-                    className="text-muted-foreground flex items-center text-xs font-normal hover:underline"
-                  >
-                    {items.length} {items.length === 1 ? 'process' : 'processes'}
-                    <ChevronRight className="size-3.5" />
-                  </Link>
+                  <div className="flex items-center gap-3">
+                    <Link
+                      to={`/library/${department.slug}`}
+                      className="text-muted-foreground flex items-center text-xs font-normal hover:underline"
+                    >
+                      {items.length} {items.length === 1 ? 'process' : 'processes'}
+                      <ChevronRight className="size-3.5" />
+                    </Link>
+                    <DepartmentPackButton departmentSlug={department.slug} size="sm" />
+                  </div>
                 </CardTitle>
               </CardHeader>
               <CardContent className="px-2">

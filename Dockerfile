@@ -11,7 +11,9 @@ COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
 COPY apps/api/package.json apps/api/
 COPY apps/web/package.json apps/web/
 COPY packages/db/package.json packages/db/
+COPY packages/diagram/package.json packages/diagram/
 COPY packages/shared/package.json packages/shared/
+# Keep in sync with workspace packages (dependency layer is cached separately from source).
 RUN pnpm install --frozen-lockfile
 COPY . .
 RUN pnpm --filter @process-ai/web build \

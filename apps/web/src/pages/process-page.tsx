@@ -26,6 +26,7 @@ import { ProcessMap } from '@/features/process-map/process-map';
 import { StepPanel } from '@/features/process-map/step-panel';
 import { StepTable, RulesList } from '@/features/processes/process-details';
 import { VersionsTable } from '@/features/processes/versions-table';
+import { ProcessDownloadMenu } from '@/features/processes/download-actions';
 
 export function ProcessPage() {
   const { processId = '' } = useParams();
@@ -161,6 +162,9 @@ function ProcessHeader({
         <h1 className="text-2xl font-semibold tracking-tight">{p.name}</h1>
         <StatusBadge status={g.status} />
         {g.kind === 'to_be' && <span className="text-muted-foreground text-sm">To-Be</span>}
+        <div className="ml-auto">
+          <ProcessDownloadMenu versionId={g.id} slug={p.slug} />
+        </div>
       </div>
       {g.description && <p className="text-muted-foreground mt-1 max-w-3xl">{g.description}</p>}
 
