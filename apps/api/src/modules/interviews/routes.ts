@@ -18,7 +18,7 @@ import {
   type LlmGateway,
 } from '@process-ai/agent';
 import { getAccessibleSession, getInterviewDetail, listInterviews } from './service.js';
-import { validationEvents } from '@process-ai/db';
+import { and, eq, interviewSessions, ne, validationEvents } from '@process-ai/db';
 import {
   GovernanceError,
   interviewFor,
@@ -111,7 +111,7 @@ export const interviewRoutes: FastifyPluginAsyncZod<{ db: Db; llm: LlmGateway | 
     '/interviews/:id/messages',
     { schema: { params: IdParams, body: PostMessageInput } },
     async (request, reply) => {
-      const { user } = await load(request, request.params.id, true);
+      const { user, summary } = await load(request, request.params.id, true);
       const e = requireEngine();
       const events = e.postMessage({
         sessionId: request.params.id,
@@ -156,6 +156,10 @@ export const interviewRoutes: FastifyPluginAsyncZod<{ db: Db; llm: LlmGateway | 
       } finally {
         res.end();
       }
+      // A colleague's differing statement may need the owner's attention.
+      await syncVersionTasks(db, summary.versionId).catch((err) =>
+        request.log.warn({ err }, 'Task sync failed'),
+      );
     },
   );
 
@@ -236,7 +240,15 @@ export const interviewRoutes: FastifyPluginAsyncZod<{ db: Db; llm: LlmGateway | 
         actorUserId: user.id,
       });
       const ctx = await loadVersionContext(db, user, summary.versionId);
-      if (ctx.version.status === 'draft') {
+      // Submit once everyone's interview on this version is finished (a colleague may still be adding their view).
+      const othersOpen = await db.query.interviewSessions.findFirst({
+        where: and(
+          eq(interviewSessions.versionId, summary.versionId),
+          ne(interviewSessions.id, request.params.id),
+          ne(interviewSessions.status, 'completed'),
+        ),
+      });
+      if (ctx.version.status === 'draft' && !othersOpen) {
         await transition(
           db,
           ctx,

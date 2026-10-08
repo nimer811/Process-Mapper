@@ -7,6 +7,7 @@ export {
   type InterviewEvent,
 } from './interview/engine.js';
 export { loadState, UNTITLED } from './interview/repository.js';
+export { FIELD_LABEL as DISAGREEMENT_FIELD_LABEL } from './interview/disagreements.js';
 export { analyzeGaps, completeness } from './interview/gaps.js';
 export type { InterviewState } from './interview/state.js';
 export { type LlmGateway, LlmNotConfiguredError } from './llm/gateway.js';

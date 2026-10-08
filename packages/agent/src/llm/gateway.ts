@@ -9,7 +9,8 @@ export type LlmPurpose =
   | 'rolling_summary'
   | 'analyse'
   | 'classify'
-  | 'design';
+  | 'design'
+  | 'reconcile';
 
 export interface LlmCallRecord {
   purpose: LlmPurpose;

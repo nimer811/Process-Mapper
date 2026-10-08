@@ -3,6 +3,7 @@ import {
   asc,
   businessRules,
   desc,
+  disagreements,
   documentChunks,
   documents,
   eq,
@@ -131,6 +132,19 @@ export async function computeBlockers(db: Db, ctx: VersionContext): Promise<Bloc
       });
     }
   }
+  // People described something differently: the owner settles it (the AI recommends).
+  const differing = await db
+    .select({ id: disagreements.id, subject: disagreements.subject })
+    .from(disagreements)
+    .where(and(eq(disagreements.versionId, versionId), eq(disagreements.status, 'open')));
+  for (const d of differing) {
+    add({
+      kind: 'disagreement',
+      entityType: 'disagreement',
+      entityId: d.id,
+      description: `Colleagues described ${d.subject} differently. Review the AI's recommendation and decide.`,
+    });
+  }
   for (const c of contradictions) {
     add({
       kind: 'contradiction',
@@ -211,6 +225,10 @@ export async function readiness(db: Db, ctx: VersionContext): Promise<Readiness>
       ctx.version.kind === 'as_is' &&
       !(await openVersionExists(db, ctx.process.id, 'to_be')),
     canArchive: ctx.actor.isAdmin && !ctx.process.archivedAt,
+    canInvite:
+      !ctx.process.archivedAt &&
+      (ctx.actor.isAdmin || ctx.actor.isOwner) &&
+      (ctx.version.status === 'draft' || ctx.version.status === 'under_validation'),
     canSendBack:
       !ctx.process.archivedAt &&
       (ctx.actor.isAdmin || ctx.actor.isOwner) &&

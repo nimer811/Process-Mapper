@@ -300,7 +300,9 @@ describe('AI interview', () => {
     const second = await say("Yes, that's right.");
     expect(second.events[0]).toMatchObject({ type: 'state', stage: 'summary' });
     expect(second.events[0]).toMatchObject({
-      changes: expect.arrayContaining([expect.stringMatching(/^Confirmed: the step "Finance review"/)]),
+      changes: expect.arrayContaining([
+        expect.stringMatching(/^Confirmed: the step "Finance review"/),
+      ]),
     });
     const g = await graph();
     expect(g.steps.find((s) => s.name === 'Finance review')!.provenance).toBe('stated');
@@ -335,7 +337,12 @@ describe('AI interview', () => {
     await t.db
       .update(processSteps)
       .set({ provenance: 'inferred' })
-      .where(and(eq(processSteps.versionId, interview.versionId), eq(processSteps.name, 'Finance review')));
+      .where(
+        and(
+          eq(processSteps.versionId, interview.versionId),
+          eq(processSteps.name, 'Finance review'),
+        ),
+      );
     const sendBack = (email: string) =>
       t.app.inject({
         method: 'POST',

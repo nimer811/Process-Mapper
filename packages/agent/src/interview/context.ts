@@ -105,9 +105,9 @@ export function describeQuestions(items: OpenItemState[]) {
           ? ' (contradiction — name the source and ask which reflects what happens today)'
           : i.field === 'confirm'
             ? ' (read-back — combine all of these into ONE short question that plays them back in order, e.g. "So after X it goes to Y, then Z — is that right?")'
-          : i.source === 'analyst' && i.field && KIND_HINT[i.field]
-            ? ` (${KIND_HINT[i.field]})`
-            : '';
+            : i.source === 'analyst' && i.field && KIND_HINT[i.field]
+              ? ` (${KIND_HINT[i.field]})`
+              : '';
       const why = i.rationale ? ` Why it matters: ${i.rationale}` : '';
       return `${n + 1}. ${i.description}${source}${note}${why}`;
     })

@@ -396,9 +396,9 @@ export const governanceRoutes: FastifyPluginAsyncZod<{ db: Db }> = async (app, {
     },
   );
 
-  /** Active users, for choosing process owners (admin). */
+  /** Active users, for choosing a process owner (admin) or inviting a colleague (owner). */
   app.get('/users', { schema: { response: { 200: z.array(UserRef) } } }, async (request) => {
-    app.requireRole(request, 'admin');
+    app.requireUser(request);
     return db
       .select({ id: users.id, displayName: users.displayName, email: users.email })
       .from(users)

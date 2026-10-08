@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useRefreshProcess } from './queries';
+import { DisagreementDialog } from '@/features/contributions/disagreement-dialog';
 
 /**
  * What stands between this version and validation: AI inferences to confirm, SOP contradictions to
@@ -44,6 +45,7 @@ export function ReviewPanel({
             versionId={g.id}
             blocker={b}
             canEdit={r.canEdit}
+            canSettle={r.canInvite}
           />
         ))}
         {r.canSendBack && blocking.some((b) => b.kind === 'inferred' || b.kind === 'disputed') && (
@@ -111,11 +113,14 @@ function BlockerRow({
   versionId,
   blocker: b,
   canEdit,
+  canSettle,
 }: {
   versionId: string;
   blocker: Blocker;
   canEdit: boolean;
+  canSettle: boolean;
 }) {
+  const [settling, setSettling] = useState(false);
   const refresh = useRefreshProcess();
   const [resolution, setResolution] = useState('');
   const [busy, setBusy] = useState(false);
@@ -174,6 +179,18 @@ function BlockerRow({
             Remove
           </Button>
         </>
+      )}
+      {canSettle && b.kind === 'disagreement' && (
+        <Button size="sm" variant="outline" onClick={() => setSettling(true)}>
+          Review and decide
+        </Button>
+      )}
+      {settling && b.entityId && (
+        <DisagreementDialog
+          versionId={versionId}
+          disagreementId={b.entityId}
+          onClose={() => setSettling(false)}
+        />
       )}
       {canEdit && b.kind === 'contradiction' && (
         <form

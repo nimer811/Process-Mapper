@@ -27,6 +27,9 @@ export const InterviewSummary = z.object({
   departmentName: z.string(),
   versionId: z.uuid(),
   user: z.object({ id: z.uuid(), displayName: z.string() }),
+  /** primary: built the process; contribution: invited to add their view. */
+  kind: z.enum(['primary', 'contribution']),
+  focus: z.string().nullable(),
   stage: InterviewStage,
   status: InterviewStatus,
   completeness: z.number().nullable(),

@@ -347,11 +347,18 @@ export async function applyOps(tx: Db, ctx: ApplyContext, ops: ValidOp[]): Promi
         const item = state.openItems.find((i) => i.id === op.openItemId);
         const [, kind, entityId] = item?.gapKey?.split(':') ?? [];
         if (item?.gapKey?.startsWith('confirm:') && entityId) {
-          const table = kind === 'step' ? processSteps : kind === 'edge' ? processEdges : businessRules;
+          const table =
+            kind === 'step' ? processSteps : kind === 'edge' ? processEdges : businessRules;
           const updated = await tx
             .update(table)
             .set({ provenance: 'stated' })
-            .where(and(eq(table.id, entityId), eq(table.versionId, versionId), eq(table.provenance, 'inferred')))
+            .where(
+              and(
+                eq(table.id, entityId),
+                eq(table.versionId, versionId),
+                eq(table.provenance, 'inferred'),
+              ),
+            )
             .returning({ id: table.id });
           if (updated.length) {
             await recordEvidence(kind!, entityId, 'stated', op.resolution, 'confirmed');

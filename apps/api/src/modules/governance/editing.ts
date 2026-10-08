@@ -256,6 +256,26 @@ export function acceptElement(
   });
 }
 
+/** Replaces a rule's wording (e.g. settling a disagreement about its figures). */
+export function updateRuleStatement(
+  db: Db,
+  ctx: VersionContext,
+  userId: string,
+  ruleId: string,
+  statement: string,
+) {
+  return db.transaction(async (tx) => {
+    const updated = await tx
+      .update(businessRules)
+      .set({ statement, provenance: 'confirmed' })
+      .where(and(eq(businessRules.id, ruleId), eq(businessRules.versionId, ctx.version.id)))
+      .returning();
+    if (!updated.length) throw new GovernanceError(404, 'Rule not found in this version');
+    await record(tx as unknown as Db, ctx, userId, 'rule', ruleId, 'statement');
+    await touch(tx as unknown as Db, ctx.version.id);
+  });
+}
+
 /** Records how an open item (e.g. an SOP contradiction) was resolved. */
 export async function resolveOpenItem(
   db: Db,

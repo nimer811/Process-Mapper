@@ -23,6 +23,9 @@ export interface InterviewState {
     summarizedTurns: number;
     turnCount: number;
     stageEnteredTurn: number;
+    /** primary: built the process; contribution: a colleague adding their view. */
+    kind: 'primary' | 'contribution';
+    focus: string | null;
   };
   process: { name: string; departmentId: string; departmentName: string; isUntitled: boolean };
   version: {
@@ -44,8 +47,21 @@ export interface InterviewState {
     provenance: Provenance;
   }[];
   openItems: OpenItemState[];
+  /** Who said what (oldest first): people's statements behind each element, for spotting disagreements. */
+  sources: SourceState[];
+  /** Other people who have contributed to this version (for the interviewer's context). */
+  contributors: { userId: string; displayName: string }[];
   /** Most recent messages, oldest first. */
   recentMessages: { role: 'user' | 'assistant'; content: string }[];
+}
+
+export interface SourceState {
+  entityId: string;
+  /** Fields the statement set; null when it created the element. */
+  fields: string[] | null;
+  userId: string;
+  displayName: string;
+  quote: string | null;
 }
 
 export interface StepState {
@@ -80,7 +96,7 @@ export interface OpenItemState {
   id: string;
   type: OpenItemType;
   gapKey: string | null;
-  source: 'gap_analysis' | 'probe' | 'extractor' | 'analyst';
+  source: 'gap_analysis' | 'probe' | 'extractor' | 'analyst' | 'owner';
   rationale?: string | null;
   entityType: string | null;
   entityId: string | null;

@@ -5,6 +5,7 @@ import {
   documentChunks,
   documents,
   businessRules,
+  evidence,
   departments,
   interviewMessages,
   interviewSessions,
@@ -15,6 +16,7 @@ import {
   processVersions,
   stepSystems,
   systems,
+  users,
   type Db,
 } from '@process-ai/db';
 import type { InterviewState } from './state.js';
@@ -39,7 +41,7 @@ export async function loadState(db: Db, sessionId: string): Promise<InterviewSta
   if (!row) return null;
   const { session: s, process: p, version: v } = row;
 
-  const [steps, sys, edges, rules, items, recent] = await Promise.all([
+  const [steps, sys, edges, rules, items, recent, sources] = await Promise.all([
     db
       .select({ step: processSteps, actorName: actors.name })
       .from(processSteps)
@@ -81,6 +83,18 @@ export async function loadState(db: Db, sessionId: string): Promise<InterviewSta
       .where(eq(interviewMessages.sessionId, s.id))
       .orderBy(desc(interviewMessages.createdAt))
       .limit(RECENT_MESSAGES),
+    db
+      .select({
+        entityId: evidence.entityId,
+        field: evidence.field,
+        userId: evidence.providedBy,
+        displayName: users.displayName,
+        quote: evidence.quote,
+      })
+      .from(evidence)
+      .innerJoin(users, eq(users.id, evidence.providedBy))
+      .where(eq(evidence.versionId, v.id))
+      .orderBy(asc(evidence.createdAt)),
   ]);
 
   return {
@@ -96,6 +110,8 @@ export async function loadState(db: Db, sessionId: string): Promise<InterviewSta
       summarizedTurns: s.summarizedTurns,
       turnCount: s.turnCount,
       stageEnteredTurn: s.stageEnteredTurn,
+      kind: s.kind,
+      focus: s.focus,
     },
     process: {
       name: p.name,
@@ -130,6 +146,21 @@ export async function loadState(db: Db, sessionId: string): Promise<InterviewSta
       painPoints: step.painPoints,
       provenance: step.provenance,
     })),
+    sources: sources.map((x) => ({
+      entityId: x.entityId,
+      // Creation and read-back confirmations vouch for the whole element.
+      fields: !x.field || x.field === 'confirmed' ? null : x.field.split(','),
+      userId: x.userId!,
+      displayName: x.displayName,
+      quote: x.quote,
+    })),
+    contributors: [
+      ...new Map(
+        sources
+          .filter((x) => x.userId && x.userId !== s.userId)
+          .map((x) => [x.userId!, x.displayName]),
+      ),
+    ].map(([userId, displayName]) => ({ userId, displayName })),
     edges: edges.map((e) => ({
       id: e.id,
       fromStepId: e.fromStepId,

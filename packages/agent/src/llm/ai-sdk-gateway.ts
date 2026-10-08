@@ -59,6 +59,7 @@ export class AiSdkGateway implements LlmGateway {
   private pick(purpose: LlmPurpose) {
     return purpose === 'extract' ||
       purpose === 'analyse_turn' ||
+      purpose === 'reconcile' ||
       purpose === 'analyse' ||
       purpose === 'design'
       ? this.models.extract

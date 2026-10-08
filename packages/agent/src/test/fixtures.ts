@@ -57,6 +57,8 @@ export function state(partial: Partial<InterviewState> = {}): InterviewState {
       summarizedTurns: 0,
       turnCount: 1,
       stageEnteredTurn: 0,
+      kind: 'primary',
+      focus: null,
       ...partial.session,
     },
     process: {
@@ -80,6 +82,8 @@ export function state(partial: Partial<InterviewState> = {}): InterviewState {
     edges: partial.edges ?? [],
     rules: partial.rules ?? [],
     openItems: partial.openItems ?? [],
+    sources: partial.sources ?? [],
+    contributors: partial.contributors ?? [],
     recentMessages: partial.recentMessages ?? [],
   };
 }

@@ -219,7 +219,8 @@ describe('validation, versioning and provenance', () => {
   it('lets admins assign owners and archive processes', async () => {
     const people = (await req('GET', '/users', ADMIN)).json<UserRef[]>();
     const employee = people.find((u) => u.email === EMPLOYEE)!;
-    expect((await req('GET', '/users', OWNER)).statusCode).toBe(403);
+    // Anyone signed in can list colleagues (owners invite them); only admins assign owners.
+    expect((await req('GET', '/users', OWNER)).statusCode).toBe(200);
     expect(
       (await req('PATCH', `/processes/${draft.id}`, OWNER, { ownerUserId: employee.id }))
         .statusCode,

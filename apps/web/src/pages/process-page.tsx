@@ -29,6 +29,7 @@ import { ProcessDocuments } from '@/features/knowledge/process-documents';
 import { GovernanceBar } from '@/features/governance/governance-bar';
 import { OwnerSelect } from '@/features/governance/owner-select';
 import { ReviewPanel } from '@/features/governance/review-panel';
+import { ContributorsCard } from '@/features/contributions/contributors-card';
 import { StepDialog } from '@/features/governance/step-dialog';
 import { ConnectionsEditor, RulesEditor } from '@/features/governance/structure-editors';
 import { MetadataDialog } from '@/features/governance/metadata-dialog';
@@ -110,6 +111,11 @@ export function ProcessPage() {
       <div className="mt-4">
         <ReviewPanel graph={g} readiness={r} />
       </div>
+      {g.kind === 'as_is' && (
+        <div className="mt-4">
+          <ContributorsCard graph={g} readiness={r} />
+        </div>
+      )}
 
       {g.kind === 'to_be' && (
         <p className="mt-4 rounded-md bg-violet-50 px-3 py-2 text-sm text-violet-900 dark:bg-violet-950 dark:text-violet-100">

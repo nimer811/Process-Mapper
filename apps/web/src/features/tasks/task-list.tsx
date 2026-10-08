@@ -6,6 +6,8 @@ import {
   MessagesSquare,
   Stamp,
   UserRoundPlus,
+  Users,
+  Scale,
   X,
   type LucideIcon,
 } from 'lucide-react';
@@ -21,6 +23,8 @@ const ICON: Record<TaskKind, LucideIcon> = {
   assign_owner: UserRoundPlus,
   validate: ClipboardCheck,
   approve: Stamp,
+  add_view: Users,
+  resolve_disagreements: Scale,
 };
 
 const ACTION: Record<TaskKind, string> = {
@@ -29,6 +33,8 @@ const ACTION: Record<TaskKind, string> = {
   assign_owner: 'Assign owner',
   validate: 'Review',
   approve: 'Review',
+  add_view: 'Start',
+  resolve_disagreements: 'Decide',
 };
 
 export function TaskList({ tasks, compact = false }: { tasks: Task[]; compact?: boolean }) {

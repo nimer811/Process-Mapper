@@ -34,6 +34,7 @@ import { processRoutes } from './modules/processes/routes.js';
 import { packRoutes } from './modules/packs/routes.js';
 import { interviewRoutes } from './modules/interviews/routes.js';
 import { taskRoutes } from './modules/tasks/routes.js';
+import { contributionRoutes } from './modules/contributions/routes.js';
 
 export interface AppDeps {
   config: Config;
@@ -121,6 +122,7 @@ export async function buildApp(
       await api.register(knowledgeRoutes, { db, store: fileStore, embedder, jobs: queue });
       await api.register(governanceRoutes, { db });
       await api.register(taskRoutes, { db });
+      await api.register(contributionRoutes, { db, llm: gateway });
       await api.register(analysisRoutes, { db, llm: gateway });
       await api.register(designRoutes, { db, llm: gateway });
     },

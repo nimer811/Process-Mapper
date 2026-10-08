@@ -1,6 +1,8 @@
 import {
   and,
   arrayContains,
+  count,
+  disagreements,
   desc,
   eq,
   inArray,
@@ -22,7 +24,14 @@ import type { Task, TaskKind } from '@process-ai/shared';
 export const NUDGE_AFTER_DAYS = 3;
 
 /** Kinds that close themselves when the action is done (the others can be dismissed). */
-const LIFECYCLE_KINDS: TaskKind[] = ['confirm_points', 'assign_owner', 'validate', 'approve'];
+const LIFECYCLE_KINDS: TaskKind[] = [
+  'confirm_points',
+  'assign_owner',
+  'validate',
+  'approve',
+  'add_view',
+  'resolve_disagreements',
+];
 
 /**
  * Delivery outside the app (email, Teams). Not configured for the pilot: tasks show in the inbox
@@ -138,6 +147,24 @@ export async function syncVersionTasks(db: Db, versionId: string, notifier: Noti
     }
   }
 
+  // Colleagues described something differently: the owner (or admins, until there is one) settles it.
+  const [{ n: differing } = { n: 0 }] = await db
+    .select({ n: count() })
+    .from(disagreements)
+    .where(and(eq(disagreements.versionId, v.id), eq(disagreements.status, 'open')));
+  if (!p.archivedAt && differing > 0 && (v.status === 'draft' || v.status === 'under_validation')) {
+    for (const id of p.ownerUserId ? [p.ownerUserId] : await admins()) {
+      wanted.push({
+        ...base,
+        userId: id,
+        kind: 'resolve_disagreements',
+        title: `Settle ${differing} difference${differing === 1 ? '' : 's'} on "${p.name}"`,
+        detail:
+          'Colleagues described parts of this process differently. The AI has a recommendation for each; you decide.',
+      });
+    }
+  }
+
   const keep: string[] = [];
   for (const t of wanted) {
     const opened = await openTask(db, t, notifier);
@@ -151,7 +178,7 @@ export async function syncVersionTasks(db: Db, versionId: string, notifier: Noti
     if (wanted.some((w) => w.userId === t.userId && w.kind === t.kind)) keep.push(t.id);
   }
   await closeTasks(db, {
-    kinds: ['assign_owner', 'validate', 'approve'],
+    kinds: ['assign_owner', 'validate', 'approve', 'resolve_disagreements'],
     versionId: v.id,
     keepIds: keep,
   });
@@ -194,7 +221,7 @@ export async function openConfirmTask(
 
 /** The interview finished: nothing left for the interviewee to do on it. */
 export async function closeInterviewTasks(db: Db, sessionId: string) {
-  await closeTasks(db, { kinds: ['confirm_points', 'continue_interview'], sessionId });
+  await closeTasks(db, { kinds: ['confirm_points', 'continue_interview', 'add_view'], sessionId });
 }
 
 /** Nudges for this person's unfinished interviews that went quiet; closes nudges that no longer apply. */

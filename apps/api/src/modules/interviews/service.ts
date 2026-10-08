@@ -38,6 +38,8 @@ const toSummary = (r: SummaryRow): InterviewSummary => ({
   departmentName: r.departmentName,
   versionId: r.session.versionId,
   user: r.user,
+  kind: r.session.kind,
+  focus: r.session.focus,
   stage: r.session.stage,
   status: r.session.status,
   completeness: r.completeness,

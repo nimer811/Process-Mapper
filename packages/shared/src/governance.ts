@@ -29,8 +29,8 @@ export const TransitionInput = z.object({
 export type TransitionInput = z.infer<typeof TransitionInput>;
 
 export const Blocker = z.object({
-  kind: z.enum(['inferred', 'disputed', 'contradiction', 'no_owner', 'structure']),
-  entityType: z.enum(['step', 'edge', 'rule', 'open_item', 'process']).nullable(),
+  kind: z.enum(['inferred', 'disputed', 'contradiction', 'disagreement', 'no_owner', 'structure']),
+  entityType: z.enum(['step', 'edge', 'rule', 'open_item', 'process', 'disagreement']).nullable(),
   entityId: z.uuid().nullable(),
   description: z.string(),
   /** Warnings are shown but don't block validation. */
@@ -50,6 +50,8 @@ export const Readiness = z.object({
   canArchive: z.boolean(),
   /** Owner/admin may send open points back to the interviewee (the interview behind this version is finished). */
   canSendBack: z.boolean(),
+  /** Owner/admin may invite colleagues to add their view (draft or under validation). */
+  canInvite: z.boolean(),
   blockers: z.array(Blocker),
 });
 export type Readiness = z.infer<typeof Readiness>;

@@ -57,6 +57,13 @@
       "when": 1791457154525,
       "tag": "0007_inbox_tasks",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1791460678286,
+      "tag": "0008_contributions",
+      "breakpoints": true
     }
   ]
 }
