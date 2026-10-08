@@ -9,6 +9,7 @@ import { ProcessPage } from '@/pages/process-page';
 import { AdminPage } from '@/pages/admin/admin-page';
 import { DepartmentsAdminPage } from '@/pages/admin/departments-page';
 import { InterviewsPage } from '@/pages/interviews-page';
+import { InboxPage } from '@/pages/inbox-page';
 import { InterviewPage } from '@/pages/interview-page';
 import { ChatPage } from '@/pages/chat-page';
 import { KnowledgeBasePage, KnowledgePage } from '@/pages/knowledge-page';
@@ -26,6 +27,7 @@ export const router = createBrowserRouter([
         element: <AppLayout />,
         children: [
           { index: true, element: <HomePage /> },
+          { path: 'inbox', element: <InboxPage /> },
           { path: 'interviews', element: <InterviewsPage /> },
           { path: 'interviews/:interviewId', element: <InterviewPage /> },
           { path: 'library', element: <LibraryPage /> },

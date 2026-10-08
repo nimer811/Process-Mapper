@@ -50,6 +50,13 @@
       "when": 1791448114620,
       "tag": "0006_analyst_and_voice",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1791457154525,
+      "tag": "0007_inbox_tasks",
+      "breakpoints": true
     }
   ]
 }

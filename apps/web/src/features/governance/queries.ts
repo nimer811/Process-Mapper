@@ -60,6 +60,7 @@ export function useRefreshProcess() {
         'interviews',
         'design',
         'findings',
+        'tasks',
       ].map((k) => qc.invalidateQueries({ queryKey: [k] })),
     );
 }

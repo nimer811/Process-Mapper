@@ -23,6 +23,7 @@ import { canViewVersion } from '../processes/visibility.js';
 import { getVersionGraph } from '../processes/service.js';
 import { runRuleChecks } from '../analysis/service.js';
 import * as edit from './editing.js';
+import { syncProcessTasks, syncVersionTasks } from '../tasks/service.js';
 import {
   archiveProcess,
   createVersion,
@@ -91,6 +92,7 @@ export const governanceRoutes: FastifyPluginAsyncZod<{ db: Db }> = async (app, {
     async (request) => {
       const { user, ctx } = await ctxFor(request, request.params.id);
       await transition(db, ctx, user.id, request.body.action, request.body.comment);
+      await syncVersionTasks(db, ctx.version.id);
       if (request.body.action === 'validate') {
         // Validated content gets an automatic rule check (cheap, deterministic, no AI).
         const graph = await getVersionGraph(db, user, ctx.version.id);
@@ -356,6 +358,7 @@ export const governanceRoutes: FastifyPluginAsyncZod<{ db: Db }> = async (app, {
         .set(request.body)
         .where(eq(processes.id, before.id))
         .returning();
+      await syncProcessTasks(db, before.id);
       await audit(db, request, {
         action: 'process.updated',
         entityType: 'process',
@@ -383,6 +386,7 @@ export const governanceRoutes: FastifyPluginAsyncZod<{ db: Db }> = async (app, {
       if (!proc) throw new GovernanceError(404, 'Process not found');
       if (proc.archivedAt) throw new GovernanceError(409, 'Already archived');
       await archiveProcess(db, proc.id, user.id, request.body?.comment);
+      await syncProcessTasks(db, proc.id);
       await audit(db, request, {
         action: 'process.archived',
         entityType: 'process',

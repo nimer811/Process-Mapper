@@ -1,7 +1,7 @@
 # Process AI — Roadmap after the Procurement pilot build (Draft for approval)
 
 Date: 2026-10-08
-Status: Draft — waiting for approval and the decisions in section 4
+Status: Approved 2026-10-08 — decisions in `docs/decisions/2026-10-08-roadmap-decisions.md`. Phase A and B done.
 
 ## 1. Where we are
 

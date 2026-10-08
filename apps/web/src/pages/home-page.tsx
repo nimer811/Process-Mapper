@@ -11,11 +11,13 @@ import { StartInterviewDialog } from '@/features/interviews/start-interview-dial
 import { stageLabel, useInterviews } from '@/features/interviews/queries';
 import { useProcesses } from '@/features/processes/queries';
 import { StatusBadge } from '@/features/processes/badges';
+import { useTasks } from '@/features/tasks/queries';
 
 export function HomePage() {
   const { user } = useAuth();
   const firstName = user?.displayName.split(' ')[0] ?? '';
-  const awaiting = useProcesses({ owner: 'me', status: 'under_validation' });
+  const tasks = useTasks();
+  const openTasks = (tasks.data ?? []).filter((t) => t.status === 'open');
   const interviews = useInterviews();
   const all = useProcesses({});
   const recent = [...(all.data ?? [])]
@@ -43,16 +45,21 @@ export function HomePage() {
       />
       <div className="grid gap-4 lg:grid-cols-3">
         <ListCard
-          title="Awaiting my validation"
+          title="My actions"
           empty="Nothing waiting for you."
-          loading={awaiting.isPending}
-          items={(awaiting.data ?? []).map((p) => ({
-            key: p.id,
-            to: `/processes/${p.id}`,
-            title: p.name,
-            meta: `${p.department.name} · v${p.versionNumber}`,
+          loading={tasks.isPending}
+          items={openTasks.slice(0, 5).map((t) => ({
+            key: t.id,
+            to: t.link,
+            title: t.title,
+            meta: formatDate(t.createdAt),
           }))}
-          highlight={!!awaiting.data?.length}
+          highlight={openTasks.length > 0}
+          more={
+            openTasks.length > 5
+              ? { to: '/inbox', label: `All ${openTasks.length} actions` }
+              : undefined
+          }
         />
         <ListCard
           title="My interviews in progress"
@@ -87,6 +94,7 @@ function ListCard(props: {
   empty: string;
   loading: boolean;
   highlight?: boolean;
+  more?: { to: string; label: string };
   items: { key: string; to: string; title: string; meta: string; badge?: ReactNode }[];
 }) {
   return (
@@ -121,6 +129,16 @@ function ListCard(props: {
                   </Link>
                 </li>
               ))}
+              {props.more && (
+                <li>
+                  <Link
+                    to={props.more.to}
+                    className="text-muted-foreground block px-2 py-2 text-xs underline"
+                  >
+                    {props.more.label}
+                  </Link>
+                </li>
+              )}
             </ul>
           )}
         </CardContent>

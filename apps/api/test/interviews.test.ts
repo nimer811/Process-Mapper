@@ -351,6 +351,17 @@ describe('AI interview', () => {
     expect(message).toMatch(/the step "Finance review" happens/);
     expect(message).toMatch(/Is Finance really involved\?/);
     expect((await graph()).status).toBe('draft');
+    // The interviewee is asked in their inbox; the owner-assignment task closed with the return to draft.
+    const inbox = async (email: string) =>
+      (await t.app.inject({ method: 'GET', url: '/api/v1/tasks', headers: t.as(email) })).json<
+        { kind: string; status: string; link: string; detail: string | null }[]
+      >();
+    const confirm = (await inbox(EMPLOYEE)).find((x) => x.kind === 'confirm_points')!;
+    expect(confirm).toMatchObject({ status: 'open', link: `/interviews/${interview.id}` });
+    expect(confirm.detail).toContain('Is Finance really involved?');
+    expect(
+      (await inbox(ADMIN)).filter((x) => x.kind === 'assign_owner' && x.status === 'open'),
+    ).toEqual([]);
 
     // The interviewee can continue the conversation again.
     llm.enqueue('extract', { user_intent: 'continue', ops: [] });

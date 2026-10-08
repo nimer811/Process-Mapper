@@ -28,7 +28,10 @@ Move resolved notes to `docs/notes/` or `docs/decisions/` once they are settled.
 - AI inferences (steps, connections, rules) are read back to the employee as one question on playback turns and before the summary; a "yes" makes them stated, with evidence. Confirming the summary also confirms what it showed.
 - Validation: "Ask the interviewee" on the review panel returns the version to draft and reopens the interview with the read-back (`POST /versions/:id/send-back`). The owner blocker shows the role the interview named as accountable.
 - Phase A (roadmap) done: reformat committed separately (a38f608, revertable), work committed and pushed, Docker rebuilt, admins see everyone's chats (Everyone / Mine toggle in /chat).
-- Open: `pnpm-lock 2.yaml` is a stray tracked duplicate of the lockfile — delete it from git? Next: Phase B (inbox and notifications) — needs decision 1 in `docs/briefs/draft-process-ai-roadmap.md`.
+- Roadmap decisions recorded in `docs/decisions/2026-10-08-roadmap-decisions.md` (in-app only, own SOP template, APQC, Arabic later, AI recommends / owner verifies, Entra later).
+- Phase B done: "My actions" inbox (`tasks` table, migration 0007). Tasks open/close from lifecycle state: assign owner (admins), validate (owner), approve (admins), confirm points (interviewee, on send-back), nudge after 3 quiet days (dismissible). Sidebar badge + Home card. `Notifier` hook is a no-op until email is configured.
+- SOP benchmark for Phase D: `docs/notes/sop-template-benchmark.md`. Open question from it: make controls their own entity (separate from business rules)?
+- Open: `pnpm-lock 2.yaml` is a stray tracked duplicate of the lockfile — delete it from git?
 
 ## 2026-10-08 — Analyst interviewer (step 1 of the engine upgrade)
 

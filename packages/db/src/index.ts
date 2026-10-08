@@ -11,6 +11,7 @@ export { normalizeName, upsertActor, upsertSystem } from './catalog.js';
 export {
   aliasedTable,
   and,
+  arrayContains,
   asc,
   count,
   desc,
@@ -19,6 +20,9 @@ export {
   ilike,
   inArray,
   isNull,
+  lt,
+  ne,
+  notInArray,
   or,
   sql,
 } from 'drizzle-orm';

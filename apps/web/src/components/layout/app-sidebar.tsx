@@ -3,6 +3,7 @@ import {
   BookOpen,
   FolderTree,
   Home,
+  Inbox,
   LogOut,
   MessageCircle,
   MessagesSquare,
@@ -17,6 +18,7 @@ import {
   SidebarGroupContent,
   SidebarHeader,
   SidebarMenu,
+  SidebarMenuBadge,
   SidebarMenuButton,
   SidebarMenuItem,
 } from '@/components/ui/sidebar';
@@ -30,6 +32,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useAuth } from '@/auth/auth';
+import { useOpenTaskCount } from '@/features/tasks/queries';
 
 interface NavItem {
   to: string;
@@ -40,6 +43,7 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { to: '/', label: 'Home', icon: Home },
+  { to: '/inbox', label: 'My actions', icon: Inbox },
   { to: '/interviews', label: 'Interviews', icon: MessagesSquare },
   { to: '/chat', label: 'Chat (preview)', icon: MessageCircle },
   { to: '/library', label: 'Process Library', icon: FolderTree },
@@ -59,6 +63,7 @@ function initials(name: string) {
 export function AppSidebar() {
   const { user, hasRole, signOut } = useAuth();
   const { pathname } = useLocation();
+  const openTasks = useOpenTaskCount();
   const isActive = (to: string) => (to === '/' ? pathname === '/' : pathname.startsWith(to));
 
   return (
@@ -93,6 +98,11 @@ export function AppSidebar() {
                         <span>{item.label}</span>
                       </NavLink>
                     </SidebarMenuButton>
+                    {item.to === '/inbox' && openTasks > 0 && (
+                      <SidebarMenuBadge className="bg-sky-600 text-white peer-hover/menu-button:text-white">
+                        {openTasks}
+                      </SidebarMenuBadge>
+                    )}
                   </SidebarMenuItem>
                 ))}
             </SidebarMenu>
