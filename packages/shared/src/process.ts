@@ -233,7 +233,8 @@ export const openItemStatuses = ['open', 'asked', 'resolved', 'dismissed'] as co
 export const OpenItemStatus = z.enum(openItemStatuses);
 export type OpenItemStatus = z.infer<typeof OpenItemStatus>;
 
-export const channels = ['web', 'teams'] as const;
+/** Conversation channels. "voice" is provisioned for spoken interviews (speech-to-text in, text-to-speech out). */
+export const channels = ['web', 'teams', 'voice'] as const;
 export const Channel = z.enum(channels);
 
 // ---- Knowledge base ----

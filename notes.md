@@ -21,6 +21,22 @@ Move resolved notes to `docs/notes/` or `docs/decisions/` once they are settled.
 
 -->
 
+## 2026-10-08 — Analyst interviewer (step 1 of the engine upgrade)
+
+**Done:**
+- Evaluation harness (`pnpm --filter @process-ai/api eval:interview`): simulated vague employee with a hidden true process (vendor onboarding, PR→PO), LLM judge, results in `apps/api/scripts/eval/results.jsonl` (git-ignored)
+- Baseline: vendor onboarding stopped after 4 turns with 3/9 steps (the reported problem)
+- Analyst pass every turn (`packages/agent/src/interview/analyst.ts`): flags missing steps, vague answers, unclear terms, needed detail, inconsistencies, implausible flows, SOP and leading-practice gaps → open questions with a reason; resolves what the answer addressed
+- Leading-practice checklists (`checklists.ts`): vendor onboarding, PR→PO, tendering, invoice processing, generic — guide questions, never recorded as facts
+- Ending: no summary just because questions ran out; depth gate (connected flow, ≥3 steps, every step owned, no unasked important questions) + analyst go-ahead; target ~24 turns, hard limit 35 with "Still to confirm"
+- Playback every 5 turns; analyst gets an "already asked" list; interviewer may only cite retrieved documents; summary never mentions internal wording
+- Hard timeouts on model calls (analyst 20 s, extraction 30 s); the interview continues if a call is late
+- Voice provision: `voice` channel + spoken reply style; design note `docs/decisions/2026-10-08-voice-interviews.md`
+
+**Still open:**
+- Step 2: To-Be ownership design (RACI, segregation of duties), KB grounding with citations, editable best-practice library, post-design checks
+- Note: my command sandbox intermittently blocks api.openai.com; evaluation runs need to run outside it (the app in Docker is unaffected)
+
 ## 2026-10-03 — Smart upload + To-Be design
 
 **Done:**

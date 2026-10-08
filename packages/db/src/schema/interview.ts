@@ -80,11 +80,13 @@ export const openItems = pgTable(
     type: openItemType().notNull(),
     /** Stable key for deterministic gaps (e.g. "step:<id>:actor") so they aren't duplicated. */
     gapKey: text(),
-    source: text({ enum: ['gap_analysis', 'probe', 'extractor'] }).notNull(),
+    source: text({ enum: ['gap_analysis', 'probe', 'extractor', 'analyst'] }).notNull(),
     entityType: text(),
     entityId: uuid(),
     field: text(),
     description: text().notNull(),
+    /** Why the analyst wants to ask this (shown to users in Open questions; guides phrasing). */
+    rationale: text(),
     /** SOP passage behind a contradiction (FK added in migration). */
     chunkId: uuid(),
     priority: integer().notNull().default(50),

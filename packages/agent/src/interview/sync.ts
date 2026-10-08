@@ -11,7 +11,7 @@ import type { InterviewState } from './state.js';
  * - probes are resolved one turn after being asked (any answer counts);
  * - items asked too often are dismissed as unknown so the interviewer stops nagging.
  */
-export async function syncOpenItems(db: Db, state: InterviewState, gaps: Gap[], turn: number) {
+export async function syncOpenItems(db: Db, state: InterviewState, gaps: Gap[], _turn: number) {
   const sessionId = state.session.id;
   const byKey = new Map(state.openItems.filter((i) => i.gapKey).map((i) => [i.gapKey!, i]));
   const gapKeys = new Set(gaps.map((g) => g.gapKey));
@@ -39,9 +39,8 @@ export async function syncOpenItems(db: Db, state: InterviewState, gaps: Gap[], 
 
   const active = state.openItems.filter((i) => i.status === 'open' || i.status === 'asked');
   const answered = active.filter((i) => i.source === 'gap_analysis' && i.gapKey && !gapKeys.has(i.gapKey)).map((i) => i.id);
-  const probesDone = active
-    .filter((i) => i.source === 'probe' && i.status === 'asked' && (i.lastAskedTurn ?? turn) < turn)
-    .map((i) => i.id);
+  // Standard questions are resolved when an answer addresses them (extractor or analyst), not just by being asked.
+  const probesDone: string[] = [];
   const exhausted = active
     .filter((i) => i.timesAsked >= MAX_TIMES_ASKED && !answered.includes(i.id) && !probesDone.includes(i.id))
     .map((i) => i.id);

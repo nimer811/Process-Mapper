@@ -74,7 +74,8 @@ export interface OpenItemState {
   id: string;
   type: OpenItemType;
   gapKey: string | null;
-  source: 'gap_analysis' | 'probe' | 'extractor';
+  source: 'gap_analysis' | 'probe' | 'extractor' | 'analyst';
+  rationale?: string | null;
   entityType: string | null;
   entityId: string | null;
   field: string | null;

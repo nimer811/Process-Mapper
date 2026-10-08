@@ -40,7 +40,9 @@ export class AiSdkGateway implements LlmGateway {
   }
 
   private pick(purpose: LlmPurpose) {
-    return purpose === 'extract' || purpose === 'analyse' || purpose === 'design' ? this.models.extract : this.models.chat;
+    return purpose === 'extract' || purpose === 'analyse_turn' || purpose === 'analyse' || purpose === 'design'
+      ? this.models.extract
+      : this.models.chat;
   }
 
   async embed(texts: string[]): Promise<number[][]> {
@@ -58,7 +60,8 @@ export class AiSdkGateway implements LlmGateway {
         system: req.system,
         prompt: req.prompt,
         output: Output.object({ schema: req.schema }),
-        timeout: this.timeoutMs,
+        // Hard abort: provider-side stalls must not hold up a conversation.
+        abortSignal: AbortSignal.timeout(req.timeoutMs ?? this.timeoutMs),
         maxRetries: 1,
       });
       onCall?.(this.record(req.purpose, id, started, result.usage));
@@ -77,7 +80,7 @@ export class AiSdkGateway implements LlmGateway {
       model,
       system: req.system,
       prompt: req.prompt,
-      timeout: this.timeoutMs,
+      abortSignal: AbortSignal.timeout(this.timeoutMs),
       maxRetries: 1,
       onError: ({ error }) => {
         failed = error;

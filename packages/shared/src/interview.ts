@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { InterviewStage, InterviewStatus, OpenItemStatus, OpenItemType } from './process.js';
+import { Channel, InterviewStage, InterviewStatus, OpenItemStatus, OpenItemType } from './process.js';
 
 export const Citation = z.object({ documentId: z.uuid(), label: z.string() });
 export type Citation = z.infer<typeof Citation>;
@@ -35,6 +35,8 @@ export const OpenItem = z.object({
   type: OpenItemType,
   description: z.string(),
   status: OpenItemStatus,
+  /** Why the interviewer wants to know (analyst questions). */
+  rationale: z.string().nullable(),
   entityId: z.uuid().nullable(),
   timesAsked: z.number().int(),
 });
@@ -50,10 +52,15 @@ export type InterviewDetail = z.infer<typeof InterviewDetail>;
 export const StartInterviewInput = z.object({
   departmentId: z.uuid(),
   processName: z.string().trim().max(120).nullable().optional(),
+  channel: Channel.optional(),
 });
 export type StartInterviewInput = z.infer<typeof StartInterviewInput>;
 
-export const PostMessageInput = z.object({ text: z.string().trim().min(1).max(8000) });
+export const PostMessageInput = z.object({
+  text: z.string().trim().min(1).max(8000),
+  /** "voice" when the text came from speech-to-text; replies are then phrased to be spoken. */
+  channel: Channel.optional(),
+});
 
 /** Server-sent events streamed while the interviewer replies. */
 export type InterviewStreamEvent =

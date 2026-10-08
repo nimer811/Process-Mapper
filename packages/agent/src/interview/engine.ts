@@ -19,9 +19,11 @@ import { ExtractionResult } from './ops.js';
 import { selectQuestions } from './policy.js';
 import { EXTRACTION_SYSTEM, RESPONSE_SYSTEM, ROLLING_SUMMARY_SYSTEM, SUMMARY_SYSTEM } from './prompts.js';
 import { loadState, RECENT_MESSAGES, UNTITLED } from './repository.js';
-import { nextStage } from './stage.js';
+import { isDeepEnough, nextStage } from './stage.js';
 import type { Citation, InterviewState, OpenItemState, ReferenceDoc } from './state.js';
 import { syncOpenItems } from './sync.js';
+import { runAnalyst, TARGET_TURNS } from './analyst.js';
+import { addDeepeningQuestion, storeAnalystFindings } from './analyst-store.js';
 import { validateOps } from './validate.js';
 
 export type InterviewEvent =
@@ -40,6 +42,19 @@ export interface AssistantMessage {
 
 /** Reference passages given to the extractor each turn. */
 const REFERENCE_DOCS = 5;
+
+/** Past this many turns the interview is summarised even if gaps remain (listed as still to confirm). */
+const HARD_TURN_LIMIT = 35;
+
+/** Play back the understood flow every N turns. */
+const PLAYBACK_EVERY = 5;
+
+/** Extra reply instructions per channel (voice replies are spoken aloud). */
+function styleFor(channel: string) {
+  return channel === 'voice'
+    ? '\n\nYour reply will be spoken aloud: use short, natural sentences; no lists, symbols, headings or step keys.'
+    : '';
+}
 
 export class SessionBusyError extends Error {
   constructor() {
@@ -86,7 +101,7 @@ export class InterviewEngine {
     userDisplayName: string;
     departmentId: string;
     processName?: string | null;
-    channel?: 'web' | 'teams';
+    channel?: 'web' | 'teams' | 'voice';
   }) {
     const dept = await this.db.query.departments.findFirst({ where: eq(departments.id, input.departmentId) });
     if (!dept) throw new Error('Department not found');
@@ -139,7 +154,7 @@ export class InterviewEngine {
   }
 
   /** Runs one interview turn and streams events (state update, reply tokens, final message). */
-  async *postMessage(input: { sessionId: string; userId: string; text: string; channel?: 'web' | 'teams' }): AsyncGenerator<InterviewEvent> {
+  async *postMessage(input: { sessionId: string; userId: string; text: string; channel?: 'web' | 'teams' | 'voice' }): AsyncGenerator<InterviewEvent> {
     if (this.busy.has(input.sessionId)) throw new SessionBusyError();
     this.busy.add(input.sessionId);
     try {
@@ -149,7 +164,7 @@ export class InterviewEngine {
     }
   }
 
-  private async *turn(input: { sessionId: string; userId: string; text: string; channel?: 'web' | 'teams' }): AsyncGenerator<InterviewEvent> {
+  private async *turn(input: { sessionId: string; userId: string; text: string; channel?: 'web' | 'teams' | 'voice' }): AsyncGenerator<InterviewEvent> {
     const channel = input.channel ?? 'web';
     const initial = await loadState(this.db, input.sessionId);
     if (!initial) throw new SessionNotFoundError();
@@ -174,7 +189,7 @@ export class InterviewEngine {
     let extractionFailed = false;
     try {
       extraction = await this.llm.generateObject(
-        { purpose: 'extract', schema: ExtractionResult, system: EXTRACTION_SYSTEM, prompt: extractionPrompt(state, text, docs) },
+        { purpose: 'extract', schema: ExtractionResult, system: EXTRACTION_SYSTEM, prompt: extractionPrompt(state, text, docs), timeoutMs: 30_000 },
         this.recordCall(input.sessionId),
       );
     } catch (e) {
@@ -194,14 +209,36 @@ export class InterviewEngine {
       await this.db.update(interviewSessions).set({ focusStepId: applied.focusStepId }).where(eq(interviewSessions.id, input.sessionId));
     }
 
-    // 3. Gaps, stage and open items (code).
+    // 3. Rule-based gaps, then the analyst's review (model), then stage and next questions (code).
     state = (await loadState(this.db, input.sessionId))!;
     const gaps = analyzeGaps(state);
-    let stage = nextStage(state, gaps, { userIntent: extraction.user_intent });
     await syncOpenItems(this.db, state, gaps, turn);
     state = (await loadState(this.db, input.sessionId))!;
+    const analyst = await this.analyse(state, text, docs);
+    if (analyst) {
+      await storeAnalystFindings(this.db, state, analyst);
+      state = (await loadState(this.db, input.sessionId))!;
+    }
+    // Converge: past the target length, a deep-enough process is summarised; at the hard limit, summarise
+    // regardless and list what is still to confirm.
+    const deep = isDeepEnough(state);
+    const readyForSummary =
+      (deep && (!!analyst?.ready_for_summary || turn >= TARGET_TURNS)) || turn >= HARD_TURN_LIMIT;
+    let stage = nextStage(state, gaps, { userIntent: extraction.user_intent, readyForSummary });
+    // Ready to wrap up (deep enough and the analyst agrees, past the target length, or at the hard limit):
+    // go to the summary from whatever stage we're in.
+    if (readyForSummary && stage !== 'completed') stage = 'summary';
     let questions = selectQuestions(state, withStage(state.openItems, gaps), stage);
-    if (questions.length === 0 && stage !== 'summary') stage = 'summary'; // nothing left worth asking
+    if (questions.length === 0 && stage !== 'summary') {
+      // Never settle just because the question list ran dry: summarise only when the process is
+      // understood in depth; otherwise ask the employee to walk through the biggest gap.
+      if (readyForSummary) stage = 'summary';
+      else {
+        await addDeepeningQuestion(this.db, state);
+        state = (await loadState(this.db, input.sessionId))!;
+        questions = selectQuestions(state, withStage(state.openItems, gaps), stage);
+      }
+    }
     if (stage !== state.session.stage) {
       await this.db.update(interviewSessions).set({ stage, stageEnteredTurn: turn }).where(eq(interviewSessions.id, input.sessionId));
       state.session.stage = stage;
@@ -226,8 +263,16 @@ export class InterviewEngine {
     } else {
       const req =
         stage === 'summary'
-          ? { purpose: 'summarise' as const, system: SUMMARY_SYSTEM, prompt: `Process model:\n${renderOutline(state)}\n\nStill unknown:\n${renderUnknowns(state)}` }
-          : { purpose: 'respond' as const, system: RESPONSE_SYSTEM, prompt: responsePrompt(state, text, applied.changes, questions, extractionFailed) };
+          ? {
+              purpose: 'summarise' as const,
+              system: SUMMARY_SYSTEM + styleFor(channel),
+              prompt: `Process model:\n${renderOutline(state)}\n\nStill to confirm:\n${renderUnknowns(state)}`,
+            }
+          : {
+              purpose: 'respond' as const,
+              system: RESPONSE_SYSTEM + styleFor(channel),
+              prompt: responsePrompt(state, text, applied.changes, questions, extractionFailed, turn),
+            };
       try {
         for await (const chunk of this.llm.streamText(req, this.recordCall(input.sessionId))) {
           reply += chunk;
@@ -260,7 +305,7 @@ export class InterviewEngine {
   }
 
   /** Welcome-back message built from stored state (no model call needed). */
-  async resume(sessionId: string, channel: 'web' | 'teams' = 'web') {
+  async resume(sessionId: string, channel: 'web' | 'teams' | 'voice' = 'web') {
     const state = await loadState(this.db, sessionId);
     if (!state) throw new SessionNotFoundError();
     if (state.session.stage === 'completed') throw new SessionClosedError();
@@ -312,7 +357,7 @@ export class InterviewEngine {
   private async saveAssistant(
     sessionId: string,
     content: string,
-    channel: 'web' | 'teams',
+    channel: 'web' | 'teams' | 'voice',
     metadata: Record<string, unknown> & { citations?: Citation[] },
   ): Promise<AssistantMessage> {
     const [m] = await this.db.insert(interviewMessages).values({ sessionId, role: 'assistant', content, channel, metadata }).returning();
@@ -323,6 +368,16 @@ export class InterviewEngine {
       createdAt: m!.createdAt.toISOString(),
       citations: (metadata.citations ?? []).map((c) => ({ documentId: c.documentId, label: c.label })),
     };
+  }
+
+  /** The analyst's review of this turn; the interview carries on without it if the call fails. */
+  private async analyse(state: InterviewState, text: string, docs: ReferenceDoc[]) {
+    try {
+      return await runAnalyst(this.llm, { state, text, docs }, this.recordCall(state.session.id));
+    } catch (e) {
+      this.log.warn({ err: e, sessionId: state.session.id }, 'Analyst review failed; using rule-based questions only');
+      return null;
+    }
   }
 
   /** Top SOP passages for this turn; the interview carries on without them if search fails. */
@@ -414,8 +469,22 @@ function extractionPrompt(state: InterviewState, text: string, docs: ReferenceDo
     .join('\n\n');
 }
 
-function responsePrompt(state: InterviewState, text: string, changes: string[], questions: OpenItemState[], extractionFailed: boolean) {
+function responsePrompt(
+  state: InterviewState,
+  text: string,
+  changes: string[],
+  questions: OpenItemState[],
+  extractionFailed: boolean,
+  turn: number,
+) {
+  // Every few turns, play back the flow so far so the employee can spot gaps and errors.
+  const flow = state.steps.filter((s) => s.type !== 'start' && s.type !== 'end').map((s) => s.name);
+  const playback =
+    turn > 0 && turn % PLAYBACK_EVERY === 0 && flow.length >= 3
+      ? `Before asking, briefly play back your understanding of the flow in one sentence (${flow.join(' → ')}) and invite corrections.`
+      : null;
   return [
+    playback,
     `Process being mapped: ${state.process.isUntitled ? '(not named yet)' : state.process.name}`,
     `Recent conversation:\n${renderRecent(state, 4)}`,
     `What you just recorded from their message:\n${changes.length ? changes.map((c) => `- ${c}`).join('\n') : extractionFailed ? '(could not process that message)' : '(nothing new)'}`,

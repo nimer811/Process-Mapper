@@ -30,6 +30,7 @@ export function selectQuestions(
       if (item.type === 'contradiction') score += 45;
       if (item.type === 'ambiguity') score += 30;
       if (item.type === 'question' && item.source === 'extractor') score += 15;
+      if (item.source === 'analyst') score += 12;
       if (focus && item.entityId === focus) score += 25;
       if (item.lastAskedTurn !== null && turn - item.lastAskedTurn <= 1) score -= 60; // don't repeat at once
       score -= item.timesAsked * 15;

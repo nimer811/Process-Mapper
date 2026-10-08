@@ -1,7 +1,15 @@
 import type { z } from 'zod';
 import type { Embedder } from '@process-ai/knowledge';
 
-export type LlmPurpose = 'extract' | 'respond' | 'summarise' | 'rolling_summary' | 'analyse' | 'classify' | 'design';
+export type LlmPurpose =
+  | 'extract'
+  | 'analyse_turn'
+  | 'respond'
+  | 'summarise'
+  | 'rolling_summary'
+  | 'analyse'
+  | 'classify'
+  | 'design';
 
 export interface LlmCallRecord {
   purpose: LlmPurpose;
@@ -19,6 +27,8 @@ export interface ObjectRequest<T> {
   schema: z.ZodType<T>;
   system: string;
   prompt: string;
+  /** Hard limit for this call; the request is aborted when it passes. */
+  timeoutMs?: number;
 }
 
 export interface TextRequest {

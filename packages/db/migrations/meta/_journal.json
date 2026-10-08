@@ -43,6 +43,13 @@
       "when": 1791050712461,
       "tag": "0005_smart_upload_and_to_be",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791448114620,
+      "tag": "0006_analyst_and_voice",
+      "breakpoints": true
     }
   ]
 }

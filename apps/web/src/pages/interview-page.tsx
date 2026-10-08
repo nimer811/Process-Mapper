@@ -141,7 +141,14 @@ function InterviewWorkspace({ interview }: { interview: InterviewDetail }) {
                       ? 'Missing'
                       : i.type.charAt(0).toUpperCase() + i.type.slice(1)}
                   </Badge>
-                  <span className="min-w-0 flex-1">{i.description}</span>
+                  <span className="min-w-0 flex-1">
+                    {i.description}
+                    {i.rationale && (
+                      <span className="text-muted-foreground mt-0.5 block text-xs">
+                        Why: {i.rationale}
+                      </span>
+                    )}
+                  </span>
                   {i.status === 'asked' && (
                     <span className="text-muted-foreground shrink-0 text-xs">asked</span>
                   )}

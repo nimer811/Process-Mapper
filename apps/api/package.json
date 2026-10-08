@@ -9,7 +9,8 @@
     "start": "node dist/server.js",
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run",
-    "dev:mock-ai": "tsx --env-file-if-exists=../../.env scripts/dev-mock-ai.ts"
+    "dev:mock-ai": "tsx --env-file-if-exists=../../.env scripts/dev-mock-ai.ts",
+    "eval:interview": "tsx --env-file-if-exists=../../.env scripts/eval/run-eval.ts"
   },
   "dependencies": {
     "@ai-sdk/azure": "^4.0.90",

@@ -77,12 +77,29 @@ export function renderRecent(state: InterviewState, limit = 8): string {
     .join('\n');
 }
 
+const KIND_HINT: Record<string, string> = {
+  missing_step: 'a gap in the flow — ask them to walk you through it',
+  vague: 'the answer was vague — ask for the specific role, system or time',
+  unclear_term: 'a term you do not know — ask what it means ("I\'m not sure I follow…")',
+  needs_detail: 'needs more detail — ask them to elaborate',
+  inconsistency: 'conflicts with something said earlier — point out both and ask which is right',
+  implausible: 'seems incomplete or unusual — ask gently how it works',
+  sop_gap: 'the documents describe something they have not mentioned — ask if it happens in practice',
+  practice_gap: 'something processes like this usually include — ask neutrally whether it happens here',
+};
+
 export function describeQuestions(items: OpenItemState[]) {
   return items
     .map((i, n) => {
       const source = i.citation ? ` (source: ${i.citation.label})` : '';
-      const note = i.type === 'contradiction' ? ' (contradiction — name the source and ask which reflects what happens today)' : '';
-      return `${n + 1}. ${i.description}${source}${note}`;
+      const note =
+        i.type === 'contradiction'
+          ? ' (contradiction — name the source and ask which reflects what happens today)'
+          : i.source === 'analyst' && i.field && KIND_HINT[i.field]
+            ? ` (${KIND_HINT[i.field]})`
+            : '';
+      const why = i.rationale ? ` Why it matters: ${i.rationale}` : '';
+      return `${n + 1}. ${i.description}${source}${note}${why}`;
     })
     .join('\n');
 }

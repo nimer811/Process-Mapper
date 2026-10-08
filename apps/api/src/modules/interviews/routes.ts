@@ -83,6 +83,7 @@ export const interviewRoutes: FastifyPluginAsyncZod<{ db: Db; llm: LlmGateway | 
         userDisplayName: user.displayName,
         departmentId: request.body.departmentId,
         processName: request.body.processName,
+        channel: request.body.channel,
       });
       const { summary } = (await getAccessibleSession(db, user, started.sessionId))!;
       return reply.status(201).send({ interview: await getInterviewDetail(db, summary, true) });
@@ -109,6 +110,7 @@ export const interviewRoutes: FastifyPluginAsyncZod<{ db: Db; llm: LlmGateway | 
         sessionId: request.params.id,
         userId: user.id,
         text: request.body.text,
+        channel: request.body.channel,
       });
 
       // Pull the first event before committing to a stream, so busy/closed errors stay normal HTTP errors.

@@ -111,6 +111,7 @@ export async function getInterviewDetail(
       type: i.type,
       description: i.description,
       status: i.status,
+      rationale: i.rationale,
       entityId: i.entityId,
       timesAsked: i.timesAsked,
     })),

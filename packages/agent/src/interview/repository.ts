@@ -132,6 +132,7 @@ export async function loadState(db: Db, sessionId: string): Promise<InterviewSta
       status: i.status,
       timesAsked: i.timesAsked,
       lastAskedTurn: i.lastAskedTurn,
+      rationale: i.rationale,
       citation:
         chunk?.id && doc?.id
           ? { chunkId: chunk.id, documentId: doc.id, label: citationLabel({ documentTitle: doc.title, ...chunk }) }
