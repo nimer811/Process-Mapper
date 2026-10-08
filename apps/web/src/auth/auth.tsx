@@ -39,7 +39,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signOut: () => {
       setDevUserId(null);
       queryClient.clear();
-      queryClient.setQueryData(['me'], null);
+      // A full load of the sign-in page resets every cached query and open stream for the old user.
+      window.location.assign('/login');
     },
     hasRole: (role) => me.data?.roles.includes(role) ?? false,
   };
