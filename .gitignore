@@ -7,4 +7,4 @@ coverage/
 *.log
 .DS_Store
 /storage/
-scripts/eval/results.jsonl
+apps/api/scripts/eval/results.jsonl
