@@ -50,7 +50,9 @@ export async function layoutGraph(graph: DiagramGraph): Promise<GraphLayout> {
     ),
   });
 
-  const positions = new Map((result.children ?? []).map((c) => [c.id, { x: c.x ?? 0, y: c.y ?? 0 }]));
+  const positions = new Map(
+    (result.children ?? []).map((c) => [c.id, { x: c.x ?? 0, y: c.y ?? 0 }]),
+  );
   const loopBacks = new Set(graph.edges.filter((e) => e.type === 'loop_back').map((e) => e.id));
   const routes = new Map<string, Point[]>();
   for (const e of (result.edges ?? []) as ElkExtendedEdge[]) {

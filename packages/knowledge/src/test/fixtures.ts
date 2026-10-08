@@ -1,4 +1,14 @@
-import { AlignmentType, Document, HeadingLevel, Packer, Paragraph, Table, TableCell, TableRow, TextRun } from 'docx';
+import {
+  AlignmentType,
+  Document,
+  HeadingLevel,
+  Packer,
+  Paragraph,
+  Table,
+  TableCell,
+  TableRow,
+  TextRun,
+} from 'docx';
 import PDFDocument from 'pdfkit';
 import * as XLSX from 'xlsx';
 
@@ -13,9 +23,18 @@ export async function policyDocx(): Promise<Buffer> {
           new Paragraph({ text: 'Procurement Policy', heading: HeadingLevel.TITLE }),
           new Paragraph({ text: '4. Purchase approvals', heading: HeadingLevel.HEADING_1 }),
           new Paragraph({ text: '4.1 Budget holder approval', heading: HeadingLevel.HEADING_2 }),
-          new Paragraph('Every purchase requisition must be approved by the budget holder in SAP before sourcing starts.'),
+          new Paragraph(
+            'Every purchase requisition must be approved by the budget holder in SAP before sourcing starts.',
+          ),
           new Paragraph({ text: '4.2 Finance review', heading: HeadingLevel.HEADING_2 }),
-          new Paragraph({ children: [new TextRun('Finance approval is required only for purchase requisitions above AED 100,000.')], alignment: AlignmentType.LEFT }),
+          new Paragraph({
+            children: [
+              new TextRun(
+                'Finance approval is required only for purchase requisitions above AED 100,000.',
+              ),
+            ],
+            alignment: AlignmentType.LEFT,
+          }),
           new Paragraph({ text: '5. Delegation of authority', heading: HeadingLevel.HEADING_1 }),
           new Table({
             rows: [
@@ -44,7 +63,14 @@ export function approvalMatrixXlsx(): Buffer {
     ]),
     'Goods',
   );
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([['Category', 'Approver'], ['Services', 'Head of Procurement']]), 'Services');
+  XLSX.utils.book_append_sheet(
+    wb,
+    XLSX.utils.aoa_to_sheet([
+      ['Category', 'Approver'],
+      ['Services', 'Head of Procurement'],
+    ]),
+    'Services',
+  );
   return XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' }) as Buffer;
 }
 
@@ -55,8 +81,13 @@ export function sopPdf(): Promise<Buffer> {
     doc.on('data', (c: Buffer) => chunks.push(c));
     doc.on('end', () => resolve(Buffer.concat(chunks)));
     doc.fontSize(16).text('Vendor Onboarding SOP');
-    doc.moveDown().fontSize(11).text('All new vendors must pass sanctions screening in World-Check before approval.');
-    doc.moveDown().text('Bank details are verified by a call-back to an independently sourced phone number.');
+    doc
+      .moveDown()
+      .fontSize(11)
+      .text('All new vendors must pass sanctions screening in World-Check before approval.');
+    doc
+      .moveDown()
+      .text('Bank details are verified by a call-back to an independently sourced phone number.');
     doc.addPage().text('Vendor master records are created in SAP by the Master Data Team.');
     doc.end();
   });

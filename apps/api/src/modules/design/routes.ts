@@ -140,14 +140,12 @@ export const designRoutes: FastifyPluginAsyncZod<{ db: Db; llm: LlmGateway | nul
           .update(processVersions)
           .set({ designSummary: summary })
           .where(eq(processVersions.id, version.id));
-        await tx
-          .insert(validationEvents)
-          .values({
-            versionId: version.id,
-            action: 'reopened',
-            actorUserId: user.id,
-            comment: 'To-Be design created with AI',
-          });
+        await tx.insert(validationEvents).values({
+          versionId: version.id,
+          action: 'reopened',
+          actorUserId: user.id,
+          comment: 'To-Be design created with AI',
+        });
         return { version, applied };
       });
       if (applied.skipped.length)
@@ -163,14 +161,12 @@ export const designRoutes: FastifyPluginAsyncZod<{ db: Db; llm: LlmGateway | nul
           skipped: applied.skipped,
         },
       });
-      return reply
-        .status(201)
-        .send({
-          id: version.id,
-          versionNumber: version.versionNumber,
-          applied: applied.applied,
-          skipped: applied.skipped.length,
-        });
+      return reply.status(201).send({
+        id: version.id,
+        versionNumber: version.versionNumber,
+        applied: applied.applied,
+        skipped: applied.skipped.length,
+      });
     },
   );
 

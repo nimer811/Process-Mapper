@@ -1,4 +1,8 @@
-const dateFmt = new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+const dateFmt = new Intl.DateTimeFormat(undefined, {
+  day: 'numeric',
+  month: 'short',
+  year: 'numeric',
+});
 
 export function formatDate(iso: string | null | undefined) {
   return iso ? dateFmt.format(new Date(iso)) : '—';

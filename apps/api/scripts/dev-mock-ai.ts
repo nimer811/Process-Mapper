@@ -14,10 +14,15 @@ const latest = (prompt: string) => /<<<\n([\s\S]*?)\n>>>/.exec(prompt)?.[1] ?? '
 const llm = new MockGateway({
   extract: ({ prompt }) => {
     const text = latest(prompt);
-    if (/\b(done|that's all|that is all|finished)\b/i.test(text)) return { ops: [], user_intent: 'finish' };
+    if (/\b(done|that's all|that is all|finished)\b/i.test(text))
+      return { ops: [], user_intent: 'finish' };
     const keys = [...prompt.matchAll(/^S(\d+) \[/gm)].map((m) => Number(m[1]));
     const last = keys.length ? `S${Math.max(...keys)}` : null;
-    const name = text.split(/\s+/).slice(0, 6).join(' ').replace(/[.,;:!?]+$/, '');
+    const name = text
+      .split(/\s+/)
+      .slice(0, 6)
+      .join(' ')
+      .replace(/[.,;:!?]+$/, '');
     return {
       user_intent: 'continue',
       ops: [
@@ -43,7 +48,8 @@ const llm = new MockGateway({
       ],
     };
   },
-  respond: ({ prompt }) => `[Mock AI] Got it. ${/Ask next \(only these\):\n1\. (.*)/.exec(prompt)?.[1] ?? 'Anything else?'}`,
+  respond: ({ prompt }) =>
+    `[Mock AI] Got it. ${/Ask next \(only these\):\n1\. (.*)/.exec(prompt)?.[1] ?? 'Anything else?'}`,
   summarise: () => '[Mock AI] Here is a summary of what we captured. Does it look right?',
   rolling_summary: () => 'Mock summary.',
 });

@@ -52,7 +52,11 @@ export function arrowHead(points: Point[], size = 9): Point[] {
   const uy = (tip.y - from.y) / len;
   const base = { x: tip.x - ux * size, y: tip.y - uy * size };
   const half = size * 0.55;
-  return [tip, { x: base.x - uy * half, y: base.y + ux * half }, { x: base.x + uy * half, y: base.y - ux * half }];
+  return [
+    tip,
+    { x: base.x - uy * half, y: base.y + ux * half },
+    { x: base.x + uy * half, y: base.y - ux * half },
+  ];
 }
 
 /** Shortens a polyline's last segment so the arrowhead tip lands exactly on the node border. */
@@ -63,7 +67,10 @@ export function trimEnd(points: Point[], by: number): Point[] {
   const from = out[out.length - 2]!;
   const len = dist(from, tip);
   if (len <= by) return out;
-  out[out.length - 1] = { x: tip.x - ((tip.x - from.x) / len) * by, y: tip.y - ((tip.y - from.y) / len) * by };
+  out[out.length - 1] = {
+    x: tip.x - ((tip.x - from.x) / len) * by,
+    y: tip.y - ((tip.y - from.y) / len) * by,
+  };
   return out;
 }
 
@@ -91,4 +98,5 @@ export function wrapText(text: string, maxChars: number, maxLines: number): stri
   return lines;
 }
 
-export const truncate = (s: string, max: number) => (s.length > max ? `${s.slice(0, max - 1)}…` : s);
+export const truncate = (s: string, max: number) =>
+  s.length > max ? `${s.slice(0, max - 1)}…` : s;

@@ -16,7 +16,9 @@ describe('inspectFile', () => {
   it('rejects disguised, binary and empty files', async () => {
     const exe = Buffer.concat([Buffer.from('MZ'), Buffer.alloc(200)]);
     await expect(inspectFile(exe, 'invoice.pdf')).rejects.toThrow(UnsupportedFileError);
-    await expect(inspectFile(Buffer.from([0, 1, 2, 3]), 'notes.txt')).rejects.toThrow(UnsupportedFileError);
+    await expect(inspectFile(Buffer.from([0, 1, 2, 3]), 'notes.txt')).rejects.toThrow(
+      UnsupportedFileError,
+    );
     await expect(inspectFile(Buffer.alloc(0), 'a.pdf')).rejects.toThrow(/empty/);
   });
 });
@@ -27,15 +29,27 @@ describe('parseDocument', () => {
     const finance = blocks.find((b) => b.text.includes('AED 100,000'))!;
     // Word's Title style isn't a heading; the document title is stored on the document itself.
     expect(finance.headings).toEqual(['4. Purchase approvals', '4.2 Finance review']);
-    expect(blocks.some((b) => b.kind === 'row' && b.text === 'Amount: AED 50,001 to AED 500,000 | Approver: CFO')).toBe(true);
+    expect(
+      blocks.some(
+        (b) => b.kind === 'row' && b.text === 'Amount: AED 50,001 to AED 500,000 | Approver: CFO',
+      ),
+    ).toBe(true);
   });
 
   it('serialises spreadsheet rows with their column headers, per sheet', async () => {
     const blocks = await parseDocument(approvalMatrixXlsx(), 'xlsx');
     expect(blocks).toContainEqual(
-      expect.objectContaining({ sheet: 'Goods', text: 'Category: Goods | From (AED): 50001 | To (AED): 500000 | Approver: CFO' }),
+      expect.objectContaining({
+        sheet: 'Goods',
+        text: 'Category: Goods | From (AED): 50001 | To (AED): 500000 | Approver: CFO',
+      }),
     );
-    expect(blocks).toContainEqual(expect.objectContaining({ sheet: 'Services', text: 'Category: Services | Approver: Head of Procurement' }));
+    expect(blocks).toContainEqual(
+      expect.objectContaining({
+        sheet: 'Services',
+        text: 'Category: Services | Approver: Head of Procurement',
+      }),
+    );
   });
 
   it('extracts PDF text with page numbers', async () => {
@@ -59,7 +73,10 @@ describe('chunkBlocks', () => {
   });
 
   it('splits very long text into bounded chunks', () => {
-    const long = Array.from({ length: 400 }, (_, i) => `Sentence number ${i} about procurement.`).join(' ');
+    const long = Array.from(
+      { length: 400 },
+      (_, i) => `Sentence number ${i} about procurement.`,
+    ).join(' ');
     const chunks = chunkBlocks([{ text: long, headings: ['Long'], kind: 'paragraph' }]);
     expect(chunks.length).toBeGreaterThan(3);
     expect(Math.max(...chunks.map((c) => c.content.length))).toBeLessThanOrEqual(2700);
@@ -68,7 +85,11 @@ describe('chunkBlocks', () => {
 
 describe('HashEmbedder', () => {
   it('gives similar vectors to texts that share words', async () => {
-    const [a, b, c] = await new HashEmbedder().embed(['finance approval threshold', 'finance approval', 'vendor bank call-back']);
+    const [a, b, c] = await new HashEmbedder().embed([
+      'finance approval threshold',
+      'finance approval',
+      'vendor bank call-back',
+    ]);
     const dot = (x: number[], y: number[]) => x.reduce((s, v, i) => s + v * y[i]!, 0);
     expect(dot(a!, b!)).toBeGreaterThan(dot(a!, c!));
   });

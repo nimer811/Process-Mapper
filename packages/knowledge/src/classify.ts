@@ -44,7 +44,10 @@ const RULES: [RegExp, DocumentCategory][] = [
 ];
 
 /** Filename/heading keyword rules, used when no AI model is configured. */
-export function ruleClassify(filename: string, excerpt: string): { category: DocumentCategory; matched: boolean } {
+export function ruleClassify(
+  filename: string,
+  excerpt: string,
+): { category: DocumentCategory; matched: boolean } {
   const name = filename.replace(/[_.-]+/g, ' ');
   for (const [re, category] of RULES) if (re.test(name)) return { category, matched: true };
   const head = excerpt.slice(0, 400);

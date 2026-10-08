@@ -13,7 +13,12 @@ import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
 import { AiSdkGateway } from '@process-ai/agent';
 import { createDb, eq, interviewSessions, processes } from '@process-ai/db';
-import type { DevUser, InterviewDetail, InterviewStreamEvent, VersionGraph } from '@process-ai/shared';
+import type {
+  DevUser,
+  InterviewDetail,
+  InterviewStreamEvent,
+  VersionGraph,
+} from '@process-ai/shared';
 import { scenarios, type Scenario } from './scenarios.js';
 
 const base = process.env.EVAL_BASE_URL ?? 'http://localhost:8080';
@@ -42,7 +47,9 @@ async function withRetry<T>(what: string, fn: () => Promise<T>, attempts = 4): P
     } catch (e) {
       if (i >= attempts) throw e;
       const wait = 5000 * i;
-      console.warn(`  ${what} failed (${(e as Error).message.slice(0, 80)}); retrying in ${wait / 1000}s`);
+      console.warn(
+        `  ${what} failed (${(e as Error).message.slice(0, 80)}); retrying in ${wait / 1000}s`,
+      );
       await new Promise((r) => setTimeout(r, wait));
     }
   }
@@ -50,7 +57,9 @@ async function withRetry<T>(what: string, fn: () => Promise<T>, attempts = 4): P
 
 // ---------- simulated employee ----------
 
-const PERSONA = (s: Scenario) => `You are a busy Procurement Officer being interviewed about the "${s.processName}" process. You know this process (hidden from the interviewer):
+const PERSONA = (
+  s: Scenario,
+) => `You are a busy Procurement Officer being interviewed about the "${s.processName}" process. You know this process (hidden from the interviewer):
 
 ${JSON.stringify(s.truth, null, 2)}
 
@@ -114,25 +123,47 @@ async function send(user: string, id: string, text: string) {
 // ---------- judge ----------
 
 const Score = z.object({
-  steps_recovered: z.array(z.string()).describe('Truth step ids (T1…) clearly captured by the interview'),
-  actors_specific: z.number().describe('Of the captured work steps, fraction (0–1) whose owner is a specific role rather than a department/team'),
+  steps_recovered: z
+    .array(z.string())
+    .describe('Truth step ids (T1…) clearly captured by the interview'),
+  actors_specific: z
+    .number()
+    .describe(
+      'Of the captured work steps, fraction (0–1) whose owner is a specific role rather than a department/team',
+    ),
   decisions_captured: z.number().int(),
   exceptions_captured: z.number().int(),
   rules_captured: z.number().int(),
-  follow_up_questions: z.number().int().describe('Interviewer messages that asked to clarify, elaborate, define a term, or fill a gap between steps'),
+  follow_up_questions: z
+    .number()
+    .int()
+    .describe(
+      'Interviewer messages that asked to clarify, elaborate, define a term, or fill a gap between steps',
+    ),
   total_questions: z.number().int().describe('Interviewer messages that asked anything'),
-  notes: z.string().describe('2–3 sentences on the interviewer: what it did well and what it missed'),
+  notes: z
+    .string()
+    .describe('2–3 sentences on the interviewer: what it did well and what it missed'),
 });
 
-async function judge(s: Scenario, outline: string, transcript: { role: string; content: string }[]) {
+async function judge(
+  s: Scenario,
+  outline: string,
+  transcript: { role: string; content: string }[],
+) {
   return withRetry('judge', () => judgeOnce(s, outline, transcript));
 }
 
-async function judgeOnce(s: Scenario, outline: string, transcript: { role: string; content: string }[]) {
+async function judgeOnce(
+  s: Scenario,
+  outline: string,
+  transcript: { role: string; content: string }[],
+) {
   return llm.generateObject({
     purpose: 'analyse',
     schema: Score,
-    system: 'You evaluate a process-mapping interview strictly and fairly. Compare what was captured with the true process.',
+    system:
+      'You evaluate a process-mapping interview strictly and fairly. Compare what was captured with the true process.',
     prompt: `TRUE PROCESS\n${JSON.stringify(s.truth, null, 2)}\n\nCAPTURED PROCESS MODEL\n${outline}\n\nTRANSCRIPT\n${transcript.map((m) => `${m.role === 'user' ? 'Employee' : 'Interviewer'}: ${m.content}`).join('\n')}`,
   });
 }
@@ -141,8 +172,14 @@ function outlineOf(g: VersionGraph) {
   const key = new Map(g.steps.map((s) => [s.id, s.stepKey]));
   return [
     `Trigger: ${g.trigger ?? '-'} | End: ${g.endCondition ?? '-'}`,
-    ...g.steps.map((s) => `${s.stepKey} [${s.type}] ${s.name} — owner: ${s.actor?.name ?? '-'}; systems: ${s.systems.map((x) => x.name).join(', ') || '-'}; SLA: ${s.sla ?? '-'}`),
-    ...g.edges.map((e) => `${key.get(e.fromStepId)} -> ${key.get(e.toStepId)} [${e.type}]${e.conditionLabel ? ` "${e.conditionLabel}"` : ''}`),
+    ...g.steps.map(
+      (s) =>
+        `${s.stepKey} [${s.type}] ${s.name} — owner: ${s.actor?.name ?? '-'}; systems: ${s.systems.map((x) => x.name).join(', ') || '-'}; SLA: ${s.sla ?? '-'}`,
+    ),
+    ...g.edges.map(
+      (e) =>
+        `${key.get(e.fromStepId)} -> ${key.get(e.toStepId)} [${e.type}]${e.conditionLabel ? ` "${e.conditionLabel}"` : ''}`,
+    ),
     ...g.rules.map((r) => `Rule: ${r.statement}`),
   ].join('\n');
 }
@@ -150,7 +187,7 @@ function outlineOf(g: VersionGraph) {
 // ---------- run ----------
 
 const { db, pool } = createDb(process.env.DATABASE_URL!);
-const users = await (await fetch(`${base}/api/v1/auth/dev-users`)).json() as DevUser[];
+const users = (await (await fetch(`${base}/api/v1/auth/dev-users`)).json()) as DevUser[];
 const employee = users.find((u) => u.email === 'employee@processai.local')!.id;
 const departments = await api<{ id: string; slug: string }[]>(employee, '/departments');
 const departmentId = departments.find((d) => d.slug === 'procurement')!.id;
@@ -162,7 +199,9 @@ for (const s of scenarios.filter((x) => !only || x.id === only)) {
     method: 'POST',
     body: JSON.stringify({ departmentId, processName: s.processName }),
   });
-  const transcript: { role: string; content: string }[] = [{ role: 'assistant', content: interview.messages[0]!.content }];
+  const transcript: { role: string; content: string }[] = [
+    { role: 'assistant', content: interview.messages[0]!.content },
+  ];
   let userText = s.opening;
   let turns = 0;
   let stage = 'scoping';
@@ -195,21 +234,28 @@ for (const s of scenarios.filter((x) => !only || x.id === only)) {
     decisions: `${score.decisions_captured}/${s.truth.decisions.length}`,
     exceptions: `${score.exceptions_captured}/${s.truth.exceptions.length}`,
     rules: `${score.rules_captured}/${s.truth.rules.length}`,
-    followUpPct: score.total_questions ? Math.round((score.follow_up_questions / score.total_questions) * 100) : 0,
+    followUpPct: score.total_questions
+      ? Math.round((score.follow_up_questions / score.total_questions) * 100)
+      : 0,
     seconds: Math.round((Date.now() - started) / 1000),
     notes: score.notes,
     capturedSteps: graph.steps.length,
   };
   results.push(result);
   console.log(JSON.stringify(result, null, 2));
-  await appendFile(path.join(path.dirname(fileURLToPath(import.meta.url)), 'results.jsonl'), `${JSON.stringify({ ...result, transcript, outline })}\n`);
+  await appendFile(
+    path.join(path.dirname(fileURLToPath(import.meta.url)), 'results.jsonl'),
+    `${JSON.stringify({ ...result, transcript, outline })}\n`,
+  );
 
   // Clean up the interview and its draft process.
   await db.delete(interviewSessions).where(eq(interviewSessions.id, interview.id));
   await db.delete(processes).where(eq(processes.id, interview.processId));
 }
 await pool.end();
-console.table(results.map((r) => {
-  const { notes: _n, ...rest } = r as Record<string, unknown>;
-  return rest;
-}));
+console.table(
+  results.map((r) => {
+    const { notes: _n, ...rest } = r as Record<string, unknown>;
+    return rest;
+  }),
+);

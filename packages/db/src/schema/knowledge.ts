@@ -15,7 +15,12 @@ import {
   uuid,
   vector,
 } from 'drizzle-orm/pg-core';
-import { classificationSources, documentCategories, documentStatuses, EMBEDDING_DIMENSIONS } from '@process-ai/shared';
+import {
+  classificationSources,
+  documentCategories,
+  documentStatuses,
+  EMBEDDING_DIMENSIONS,
+} from '@process-ai/shared';
 import { id, timestamps } from './columns.js';
 import { departments, users } from './identity.js';
 import { processes } from './process.js';
@@ -89,7 +94,9 @@ export const documentChunks = pgTable(
     sheet: text(),
     tokenCount: integer().notNull(),
     embedding: vector({ dimensions: EMBEDDING_DIMENSIONS }),
-    tsv: tsvector().generatedAlwaysAs(sql`to_tsvector('english', coalesce(heading_path, '') || ' ' || content)`),
+    tsv: tsvector().generatedAlwaysAs(
+      sql`to_tsvector('english', coalesce(heading_path, '') || ' ' || content)`,
+    ),
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [

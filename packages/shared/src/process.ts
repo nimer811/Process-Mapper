@@ -35,7 +35,14 @@ export type ExecutionMode = z.infer<typeof ExecutionMode>;
 export const actorKinds = ['role', 'team', 'external'] as const;
 export const ActorKind = z.enum(actorKinds);
 
-export const ruleTypes = ['threshold', 'approval', 'compliance', 'sla', 'control', 'other'] as const;
+export const ruleTypes = [
+  'threshold',
+  'approval',
+  'compliance',
+  'sla',
+  'control',
+  'other',
+] as const;
 export const RuleType = z.enum(ruleTypes);
 
 export const evidenceSources = [
@@ -225,7 +232,13 @@ export const interviewStatuses = ['active', 'paused', 'completed', 'abandoned'] 
 export const InterviewStatus = z.enum(interviewStatuses);
 export type InterviewStatus = z.infer<typeof InterviewStatus>;
 
-export const openItemTypes = ['missing_info', 'question', 'ambiguity', 'contradiction', 'assumption'] as const;
+export const openItemTypes = [
+  'missing_info',
+  'question',
+  'ambiguity',
+  'contradiction',
+  'assumption',
+] as const;
 export const OpenItemType = z.enum(openItemTypes);
 export type OpenItemType = z.infer<typeof OpenItemType>;
 
@@ -239,7 +252,15 @@ export const Channel = z.enum(channels);
 
 // ---- Knowledge base ----
 
-export const documentCategories = ['sop', 'policy', 'doa', 'approval_matrix', 'form', 'checklist', 'other'] as const;
+export const documentCategories = [
+  'sop',
+  'policy',
+  'doa',
+  'approval_matrix',
+  'form',
+  'checklist',
+  'other',
+] as const;
 export const DocumentCategory = z.enum(documentCategories);
 export type DocumentCategory = z.infer<typeof DocumentCategory>;
 
@@ -276,7 +297,15 @@ export const issueCategories = [
 export const IssueCategory = z.enum(issueCategories);
 export type IssueCategory = z.infer<typeof IssueCategory>;
 
-export const opportunityKinds = ['workflow', 'integration', 'rpa', 'ai', 'self_service', 'elimination', 'other'] as const;
+export const opportunityKinds = [
+  'workflow',
+  'integration',
+  'rpa',
+  'ai',
+  'self_service',
+  'elimination',
+  'other',
+] as const;
 export const OpportunityKind = z.enum(opportunityKinds);
 export type OpportunityKind = z.infer<typeof OpportunityKind>;
 
@@ -299,6 +328,13 @@ export const ClassificationSource = z.enum(classificationSources);
 export type ClassificationSource = z.infer<typeof ClassificationSource>;
 
 /** Kinds of change in a To-Be design, relative to the As-Is it was based on. */
-export const designChangeTypes = ['added', 'removed', 'modified', 'reconnected', 'rule_added', 'rule_removed'] as const;
+export const designChangeTypes = [
+  'added',
+  'removed',
+  'modified',
+  'reconnected',
+  'rule_added',
+  'rule_removed',
+] as const;
 export const DesignChangeType = z.enum(designChangeTypes);
 export type DesignChangeType = z.infer<typeof DesignChangeType>;

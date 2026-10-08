@@ -24,7 +24,10 @@ export function useProcesses(query: ProcessListQuery) {
 }
 
 export function useProcess(id: string) {
-  return useQuery({ queryKey: ['process', id], queryFn: () => api<ProcessDetail>(`/processes/${id}`) });
+  return useQuery({
+    queryKey: ['process', id],
+    queryFn: () => api<ProcessDetail>(`/processes/${id}`),
+  });
 }
 
 export function useVersionGraph(id: string | undefined) {

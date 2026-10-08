@@ -202,8 +202,13 @@ describe('validation, versioning and provenance', () => {
 
     // The seeded process has an AI-inferred step; the owner must confirm it before validating.
     expect((await act(v2.id, 'submit')).statusCode).toBe(200);
-    for (const b of (await readiness(v2.id)).blockers.filter((x) => x.blocking && x.kind === 'inferred')) {
-      await req('POST', `/versions/${v2.id}/accept`, OWNER, { entityType: b.entityType, entityId: b.entityId });
+    for (const b of (await readiness(v2.id)).blockers.filter(
+      (x) => x.blocking && x.kind === 'inferred',
+    )) {
+      await req('POST', `/versions/${v2.id}/accept`, OWNER, {
+        entityType: b.entityType,
+        entityId: b.entityId,
+      });
     }
     expect((await act(v2.id, 'validate')).statusCode).toBe(200);
     const detail = (await req('GET', `/processes/${vendor.id}`, EMPLOYEE)).json<ProcessDetail>();

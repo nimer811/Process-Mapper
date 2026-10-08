@@ -1,5 +1,11 @@
 import { z } from 'zod';
-import { Channel, InterviewStage, InterviewStatus, OpenItemStatus, OpenItemType } from './process.js';
+import {
+  Channel,
+  InterviewStage,
+  InterviewStatus,
+  OpenItemStatus,
+  OpenItemType,
+} from './process.js';
 
 export const Citation = z.object({ documentId: z.uuid(), label: z.string() });
 export type Citation = z.infer<typeof Citation>;
@@ -64,7 +70,13 @@ export const PostMessageInput = z.object({
 
 /** Server-sent events streamed while the interviewer replies. */
 export type InterviewStreamEvent =
-  | { type: 'state'; stage: z.infer<typeof InterviewStage>; completeness: number; changes: string[]; versionId: string }
+  | {
+      type: 'state';
+      stage: z.infer<typeof InterviewStage>;
+      completeness: number;
+      changes: string[];
+      versionId: string;
+    }
   | { type: 'token'; text: string }
   | { type: 'message'; message: InterviewMessage }
   | { type: 'error'; message: string };

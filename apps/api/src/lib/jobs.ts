@@ -22,9 +22,13 @@ export async function createPgBossQueue(
   boss.on('error', (err) => log.error({ err }, 'Job queue error'));
   await boss.start();
   await boss.createQueue(INGEST_QUEUE, { retryLimit: 2, retryDelay: 30, expireInSeconds: 15 * 60 });
-  await boss.work<{ documentId: string }>(INGEST_QUEUE, { pollingIntervalSeconds: 2 }, async (jobs) => {
-    for (const job of jobs) await handler(job.data.documentId);
-  });
+  await boss.work<{ documentId: string }>(
+    INGEST_QUEUE,
+    { pollingIntervalSeconds: 2 },
+    async (jobs) => {
+      for (const job of jobs) await handler(job.data.documentId);
+    },
+  );
   return {
     enqueueIngest: async (documentId) => {
       await boss.send(INGEST_QUEUE, { documentId }, { singletonKey: documentId });

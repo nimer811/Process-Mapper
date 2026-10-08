@@ -13,7 +13,12 @@ export async function upsertActor(
   const normalizedName = normalizeName(name);
   await db
     .insert(actors)
-    .values({ name: name.trim(), normalizedName, kind: opts.kind ?? 'role', departmentId: opts.departmentId ?? null })
+    .values({
+      name: name.trim(),
+      normalizedName,
+      kind: opts.kind ?? 'role',
+      departmentId: opts.departmentId ?? null,
+    })
     .onConflictDoNothing();
   const row = await db.query.actors.findFirst({ where: eq(actors.normalizedName, normalizedName) });
   return row!.id;
@@ -23,6 +28,8 @@ export async function upsertActor(
 export async function upsertSystem(db: Db, name: string) {
   const normalizedName = normalizeName(name);
   await db.insert(systems).values({ name: name.trim(), normalizedName }).onConflictDoNothing();
-  const row = await db.query.systems.findFirst({ where: eq(systems.normalizedName, normalizedName) });
+  const row = await db.query.systems.findFirst({
+    where: eq(systems.normalizedName, normalizedName),
+  });
   return row!.id;
 }

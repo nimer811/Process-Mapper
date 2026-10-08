@@ -36,7 +36,13 @@ export interface InterviewState {
   };
   steps: StepState[];
   edges: EdgeState[];
-  rules: { id: string; stepId: string | null; ruleType: string; statement: string; provenance: Provenance }[];
+  rules: {
+    id: string;
+    stepId: string | null;
+    ruleType: string;
+    statement: string;
+    provenance: Provenance;
+  }[];
   openItems: OpenItemState[];
   /** Most recent messages, oldest first. */
   recentMessages: { role: 'user' | 'assistant'; content: string }[];

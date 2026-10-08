@@ -25,7 +25,12 @@ const step = (id: string, type: StepType = 'task'): ProcessStep => ({
   provenance: 'stated',
   confidence: null,
 });
-const edge = (id: string, from: string, to: string, type: ProcessEdge['type'] = 'sequence'): ProcessEdge => ({
+const edge = (
+  id: string,
+  from: string,
+  to: string,
+  type: ProcessEdge['type'] = 'sequence',
+): ProcessEdge => ({
   id,
   fromStepId: from,
   toStepId: to,
@@ -62,7 +67,10 @@ describe('process map layout', () => {
   });
 
   it('renders an escaped standalone SVG containing every step', async () => {
-    const g = { ...graph, steps: graph.steps.map((s) => (s.id === 'a' ? { ...s, name: 'Check <PO> & quotes' } : s)) };
+    const g = {
+      ...graph,
+      steps: graph.steps.map((s) => (s.id === 'a' ? { ...s, name: 'Check <PO> & quotes' } : s)),
+    };
     const svg = sceneToSvg(buildScene(g, await layoutGraph(g)), 'Test & map');
     expect(svg.startsWith('<svg')).toBe(true);
     expect(svg).toContain('Check &lt;PO&gt; &amp; quotes');
@@ -94,7 +102,10 @@ describe('geometry', () => {
   });
 
   it('wraps text and ellipsises overflow', () => {
-    expect(wrapText('Review documents and screen vendor', 20, 2)).toEqual(['Review documents and', 'screen vendor']);
+    expect(wrapText('Review documents and screen vendor', 20, 2)).toEqual([
+      'Review documents and',
+      'screen vendor',
+    ]);
     const lines = wrapText('one two three four five six seven eight', 10, 2);
     expect(lines).toHaveLength(2);
     expect(lines[1]!.endsWith('…')).toBe(true);

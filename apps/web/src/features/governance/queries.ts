@@ -1,5 +1,11 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import type { EvidenceItem, HistoryEvent, Readiness, UserRef, VersionDiff } from '@process-ai/shared';
+import type {
+  EvidenceItem,
+  HistoryEvent,
+  Readiness,
+  UserRef,
+  VersionDiff,
+} from '@process-ai/shared';
 import { api } from '@/lib/api';
 
 export function useReadiness(versionId: string | undefined) {
@@ -43,8 +49,17 @@ export function useRefreshProcess() {
   const qc = useQueryClient();
   return () =>
     Promise.all(
-      ['process', 'processes', 'version', 'readiness', 'history', 'evidence', 'compare', 'interviews', 'design', 'findings'].map((k) =>
-        qc.invalidateQueries({ queryKey: [k] }),
-      ),
+      [
+        'process',
+        'processes',
+        'version',
+        'readiness',
+        'history',
+        'evidence',
+        'compare',
+        'interviews',
+        'design',
+        'findings',
+      ].map((k) => qc.invalidateQueries({ queryKey: [k] })),
     );
 }

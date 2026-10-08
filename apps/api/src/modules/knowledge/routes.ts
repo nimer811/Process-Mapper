@@ -395,7 +395,9 @@ export const knowledgeRoutes: FastifyPluginAsyncZod<{
     const user = app.requireUser(request);
     const doc = await db.query.documents.findFirst({ where: eq(documents.id, request.params.id) });
     const kb = doc?.knowledgeBaseId
-      ? await db.query.knowledgeBases.findFirst({ where: eq(knowledgeBases.id, doc.knowledgeBaseId) })
+      ? await db.query.knowledgeBases.findFirst({
+          where: eq(knowledgeBases.id, doc.knowledgeBaseId),
+        })
       : null;
     // Admins can open anything (including unsorted uploads); others only sorted, active documents.
     const visible = doc && (user.roles.includes('admin') || (kb && doc.isActive && kb.isActive));

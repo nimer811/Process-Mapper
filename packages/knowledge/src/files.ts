@@ -20,9 +20,13 @@ const MIME: Record<FileKind, string> = {
  * Identifies the file from its bytes (never trusting the extension or the browser's MIME type)
  * and rejects anything outside the allow-list, including oversized or zip-bomb Office files.
  */
-export async function inspectFile(buffer: Buffer, filename: string): Promise<{ kind: FileKind; mimeType: string }> {
+export async function inspectFile(
+  buffer: Buffer,
+  filename: string,
+): Promise<{ kind: FileKind; mimeType: string }> {
   if (buffer.length === 0) throw new UnsupportedFileError('The file is empty');
-  if (buffer.length > MAX_UPLOAD_BYTES) throw new UnsupportedFileError('The file is larger than 25 MB');
+  if (buffer.length > MAX_UPLOAD_BYTES)
+    throw new UnsupportedFileError('The file is larger than 25 MB');
 
   const detected = await fileTypeFromBuffer(buffer);
   let kind: FileKind | null = null;
@@ -32,7 +36,9 @@ export async function inspectFile(buffer: Buffer, filename: string): Promise<{ k
   else if (!detected && /\.(txt|md|csv)$/i.test(filename) && isUtf8Text(buffer)) kind = 'txt';
 
   if (!kind) {
-    throw new UnsupportedFileError('Unsupported file type. Upload PDF, Word (.docx), Excel (.xlsx) or plain text.');
+    throw new UnsupportedFileError(
+      'Unsupported file type. Upload PDF, Word (.docx), Excel (.xlsx) or plain text.',
+    );
   }
   if (kind === 'docx' || kind === 'xlsx') checkZip(buffer);
   return { kind, mimeType: MIME[kind] };

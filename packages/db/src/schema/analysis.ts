@@ -1,5 +1,12 @@
 import { index, pgEnum, pgTable, text, timestamp, unique, uuid } from 'drizzle-orm/pg-core';
-import { designChangeTypes, findingSources, findingStatuses, issueCategories, levels, opportunityKinds } from '@process-ai/shared';
+import {
+  designChangeTypes,
+  findingSources,
+  findingStatuses,
+  issueCategories,
+  levels,
+  opportunityKinds,
+} from '@process-ai/shared';
 import { id, timestamps } from './columns.js';
 import { users } from './identity.js';
 import { processSteps, processVersions } from './process.js';
@@ -32,7 +39,11 @@ const findingColumns = {
 /** Problems in the current process. Recommendations, never changes to the As-Is model. */
 export const issues = pgTable(
   'issues',
-  { ...findingColumns, category: issueCategory().notNull(), severity: level().notNull().default('medium') },
+  {
+    ...findingColumns,
+    category: issueCategory().notNull(),
+    severity: level().notNull().default('medium'),
+  },
   (t) => [unique().on(t.versionId, t.findingKey), index().on(t.versionId)],
 );
 

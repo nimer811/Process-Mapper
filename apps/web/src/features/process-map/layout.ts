@@ -38,7 +38,10 @@ const edgeDash: Partial<Record<EdgeType, string>> = {
 };
 
 /** Converts a computed layout into React Flow nodes and edges. */
-export function toFlow(graph: DiagramGraph, { positions, routes }: GraphLayout): { nodes: StepNode[]; edges: Edge[] } {
+export function toFlow(
+  graph: DiagramGraph,
+  { positions, routes }: GraphLayout,
+): { nodes: StepNode[]; edges: Edge[] } {
   const nodes: StepNode[] = graph.steps.map((step) => ({
     id: step.id,
     type: nodeTypeFor[step.type],

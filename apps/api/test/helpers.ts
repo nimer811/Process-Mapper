@@ -18,7 +18,13 @@ export async function startTestApp(opts: { llm?: LlmGateway | null } = {}) {
     LOG_LEVEL: 'fatal',
   });
   const store = new LocalFileStore(await mkdtemp(path.join(tmpdir(), 'process-ai-test-')));
-  const app = await buildApp({ config, db: testDb.db, llm: opts.llm ?? null, store, jobs: 'inline' });
+  const app = await buildApp({
+    config,
+    db: testDb.db,
+    llm: opts.llm ?? null,
+    store,
+    jobs: 'inline',
+  });
   const devUsers = (await app.inject({ method: 'GET', url: '/api/v1/auth/dev-users' })).json<
     DevUser[]
   >();

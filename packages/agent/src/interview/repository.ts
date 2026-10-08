@@ -25,7 +25,12 @@ export const RECENT_MESSAGES = 8;
 /** Loads the full interview state for one session (or null if it doesn't exist). */
 export async function loadState(db: Db, sessionId: string): Promise<InterviewState | null> {
   const [row] = await db
-    .select({ session: interviewSessions, process: processes, version: processVersions, departmentName: departments.name })
+    .select({
+      session: interviewSessions,
+      process: processes,
+      version: processVersions,
+      departmentName: departments.name,
+    })
     .from(interviewSessions)
     .innerJoin(processes, eq(processes.id, interviewSessions.processId))
     .innerJoin(departments, eq(departments.id, processes.departmentId))
@@ -52,13 +57,23 @@ export async function loadState(db: Db, sessionId: string): Promise<InterviewSta
     db
       .select({
         item: openItems,
-        chunk: { id: documentChunks.id, headingPath: documentChunks.headingPath, page: documentChunks.page, sheet: documentChunks.sheet },
+        chunk: {
+          id: documentChunks.id,
+          headingPath: documentChunks.headingPath,
+          page: documentChunks.page,
+          sheet: documentChunks.sheet,
+        },
         doc: { id: documents.id, title: documents.title },
       })
       .from(openItems)
       .leftJoin(documentChunks, eq(documentChunks.id, openItems.chunkId))
       .leftJoin(documents, eq(documents.id, documentChunks.documentId))
-      .where(and(eq(openItems.sessionId, s.id), inArray(openItems.status, ['open', 'asked', 'resolved', 'dismissed'])))
+      .where(
+        and(
+          eq(openItems.sessionId, s.id),
+          inArray(openItems.status, ['open', 'asked', 'resolved', 'dismissed']),
+        ),
+      )
       .orderBy(asc(openItems.createdAt)),
     db
       .select({ role: interviewMessages.role, content: interviewMessages.content })
@@ -82,7 +97,12 @@ export async function loadState(db: Db, sessionId: string): Promise<InterviewSta
       turnCount: s.turnCount,
       stageEnteredTurn: s.stageEnteredTurn,
     },
-    process: { name: p.name, departmentId: p.departmentId, departmentName: row.departmentName, isUntitled: p.name === UNTITLED },
+    process: {
+      name: p.name,
+      departmentId: p.departmentId,
+      departmentName: row.departmentName,
+      isUntitled: p.name === UNTITLED,
+    },
     version: {
       description: v.description,
       purpose: v.purpose,
@@ -118,7 +138,13 @@ export async function loadState(db: Db, sessionId: string): Promise<InterviewSta
       conditionLabel: e.conditionLabel,
       provenance: e.provenance,
     })),
-    rules: rules.map((r) => ({ id: r.id, stepId: r.stepId, ruleType: r.ruleType, statement: r.statement, provenance: r.provenance })),
+    rules: rules.map((r) => ({
+      id: r.id,
+      stepId: r.stepId,
+      ruleType: r.ruleType,
+      statement: r.statement,
+      provenance: r.provenance,
+    })),
     openItems: items.map(({ item: i, chunk, doc }) => ({
       id: i.id,
       type: i.type,
@@ -135,7 +161,11 @@ export async function loadState(db: Db, sessionId: string): Promise<InterviewSta
       rationale: i.rationale,
       citation:
         chunk?.id && doc?.id
-          ? { chunkId: chunk.id, documentId: doc.id, label: citationLabel({ documentTitle: doc.title, ...chunk }) }
+          ? {
+              chunkId: chunk.id,
+              documentId: doc.id,
+              label: citationLabel({ documentTitle: doc.title, ...chunk }),
+            }
           : null,
     })),
     recentMessages: recent.reverse(),

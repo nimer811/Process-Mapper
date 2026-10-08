@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { allowedActions, canEditVersion, checkTransition } from '../src/modules/governance/lifecycle.js';
+import {
+  allowedActions,
+  canEditVersion,
+  checkTransition,
+} from '../src/modules/governance/lifecycle.js';
 
 const admin = { isAdmin: true, isOwner: false, isCreator: false };
 const owner = { isAdmin: false, isOwner: true, isCreator: false };
@@ -18,13 +22,23 @@ describe('lifecycle rules', () => {
 
   it('blocks validation while there are unresolved items', () => {
     expect(allowedActions('under_validation', owner, true)).toEqual(['return']);
-    expect(checkTransition('under_validation', 'validate', owner, { hasBlockers: true })).toMatchObject({ ok: false, status: 409 });
+    expect(
+      checkTransition('under_validation', 'validate', owner, { hasBlockers: true }),
+    ).toMatchObject({ ok: false, status: 409 });
   });
 
   it('requires a comment to return, and rejects invalid moves', () => {
-    expect(checkTransition('under_validation', 'return', owner, { hasBlockers: false })).toMatchObject({ ok: false, status: 400 });
-    expect(checkTransition('approved', 'validate', admin, { hasBlockers: false })).toMatchObject({ ok: false, status: 409 });
-    expect(checkTransition('validated', 'approve', owner, { hasBlockers: false })).toMatchObject({ ok: false, status: 403 });
+    expect(
+      checkTransition('under_validation', 'return', owner, { hasBlockers: false }),
+    ).toMatchObject({ ok: false, status: 400 });
+    expect(checkTransition('approved', 'validate', admin, { hasBlockers: false })).toMatchObject({
+      ok: false,
+      status: 409,
+    });
+    expect(checkTransition('validated', 'approve', owner, { hasBlockers: false })).toMatchObject({
+      ok: false,
+      status: 403,
+    });
   });
 
   it('locks validated and approved versions for editing', () => {

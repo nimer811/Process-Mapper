@@ -8,4 +8,17 @@ export { normalizeName, upsertActor, upsertSystem } from './catalog.js';
  * Query operators re-exported so every package uses this package's drizzle-orm instance
  * (a second copy, e.g. resolved with different optional peers, breaks type compatibility).
  */
-export { aliasedTable, and, asc, count, desc, eq, gt, ilike, inArray, isNull, or, sql } from 'drizzle-orm';
+export {
+  aliasedTable,
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  gt,
+  ilike,
+  inArray,
+  isNull,
+  or,
+  sql,
+} from 'drizzle-orm';

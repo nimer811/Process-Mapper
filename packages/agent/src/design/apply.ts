@@ -71,15 +71,13 @@ export async function applyDesign(
     result.applied++;
   };
   const inferredEvidence = (entityType: string, entityId: string) =>
-    tx
-      .insert(evidence)
-      .values({
-        versionId: ctx.versionId,
-        entityType,
-        entityId,
-        field: 'to_be_design',
-        sourceType: 'ai_inference',
-      });
+    tx.insert(evidence).values({
+      versionId: ctx.versionId,
+      entityType,
+      entityId,
+      field: 'to_be_design',
+      sourceType: 'ai_inference',
+    });
   const edgesOf = () =>
     tx.select().from(processEdges).where(eq(processEdges.versionId, ctx.versionId));
   const connect = (
@@ -114,7 +112,12 @@ export async function applyDesign(
         const set: Partial<typeof processSteps.$inferInsert> = { provenance: 'inferred' };
         const changed: string[] = [];
         const same = (a: unknown, b: unknown) =>
-          String(a ?? '').trim().toLowerCase() === String(b ?? '').trim().toLowerCase();
+          String(a ?? '')
+            .trim()
+            .toLowerCase() ===
+          String(b ?? '')
+            .trim()
+            .toLowerCase();
         const field = <K extends keyof typeof set & keyof typeof current>(
           k: K,
           v: (typeof set)[K] | null,
@@ -148,10 +151,15 @@ export async function applyDesign(
         )
           .map((r) => r.name.toLowerCase())
           .sort();
-        const proposedSystems = [...new Set((op.systems ?? []).map((x) => x.trim()).filter(Boolean))];
+        const proposedSystems = [
+          ...new Set((op.systems ?? []).map((x) => x.trim()).filter(Boolean)),
+        ];
         if (
           op.systems &&
-          proposedSystems.map((x) => x.toLowerCase()).sort().join('|') !== currentSystems.join('|')
+          proposedSystems
+            .map((x) => x.toLowerCase())
+            .sort()
+            .join('|') !== currentSystems.join('|')
         ) {
           await tx.delete(stepSystems).where(eq(stepSystems.stepId, id));
           for (const name of [...new Set(op.systems.map((x) => x.trim()).filter(Boolean))]) {

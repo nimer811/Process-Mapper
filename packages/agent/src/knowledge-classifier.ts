@@ -1,14 +1,30 @@
 import { z } from 'zod';
 import { documentCategories } from '@process-ai/shared';
-import type { Classification, ClassificationInput, DocumentClassifier } from '@process-ai/knowledge';
+import type {
+  Classification,
+  ClassificationInput,
+  DocumentClassifier,
+} from '@process-ai/knowledge';
 import type { LlmGateway } from './llm/gateway.js';
 
 const Result = z.object({
-  knowledge_base: z.string().nullable().describe('Label of the best knowledge base, e.g. "K2", or null if none fits'),
+  knowledge_base: z
+    .string()
+    .nullable()
+    .describe('Label of the best knowledge base, e.g. "K2", or null if none fits'),
   category: z.enum(documentCategories),
-  title: z.string().nullable().describe('Clean document title from the content, without file extensions or version numbers'),
-  doc_version: z.string().nullable().describe('Version or revision stated in the document, e.g. "3.1"'),
-  effective_date: z.string().nullable().describe('Effective/issue date stated in the document, as YYYY-MM-DD'),
+  title: z
+    .string()
+    .nullable()
+    .describe('Clean document title from the content, without file extensions or version numbers'),
+  doc_version: z
+    .string()
+    .nullable()
+    .describe('Version or revision stated in the document, e.g. "3.1"'),
+  effective_date: z
+    .string()
+    .nullable()
+    .describe('Effective/issue date stated in the document, as YYYY-MM-DD'),
   confidence: z.number().describe('0 to 1: how sure you are about the knowledge base and category'),
   reason: z.string().describe('One short sentence explaining the choice'),
 });
@@ -34,7 +50,10 @@ export class LlmDocumentClassifier implements DocumentClassifier {
   async classify(input: ClassificationInput): Promise<Classification> {
     const labels = input.knowledgeBases.map((kb, i) => ({ label: `K${i + 1}`, kb }));
     const kbList = labels
-      .map(({ label, kb }) => `${label}: ${kb.name}${kb.departmentName ? ` (department: ${kb.departmentName})` : ' (all departments)'}${kb.description ? ` — ${kb.description}` : ''}`)
+      .map(
+        ({ label, kb }) =>
+          `${label}: ${kb.name}${kb.departmentName ? ` (department: ${kb.departmentName})` : ' (all departments)'}${kb.description ? ` — ${kb.description}` : ''}`,
+      )
       .join('\n');
     const r = await this.llm.generateObject({
       purpose: 'classify',
@@ -50,7 +69,10 @@ export class LlmDocumentClassifier implements DocumentClassifier {
       effectiveDate: r.effective_date,
       confidence: r.confidence,
       // The model sometimes cites internal labels ("K2"); show knowledge base names instead.
-      reason: r.reason.replace(/\bK(\d+)\b/g, (m, n: string) => labels[Number(n) - 1]?.kb.name ?? m),
+      reason: r.reason.replace(
+        /\bK(\d+)\b/g,
+        (m, n: string) => labels[Number(n) - 1]?.kb.name ?? m,
+      ),
     };
   }
 }

@@ -50,16 +50,14 @@ async function record(
   field: string | null,
   source: 'manual_edit' | 'user_validation' = 'manual_edit',
 ) {
-  await tx
-    .insert(evidence)
-    .values({
-      versionId: ctx.version.id,
-      entityType,
-      entityId,
-      field,
-      sourceType: source,
-      providedBy: userId,
-    });
+  await tx.insert(evidence).values({
+    versionId: ctx.version.id,
+    entityType,
+    entityId,
+    field,
+    sourceType: source,
+    providedBy: userId,
+  });
 }
 
 async function stepOf(tx: Db, ctx: VersionContext, stepId: string) {
@@ -126,15 +124,13 @@ export function addStep(db: Db, ctx: VersionContext, userId: string, input: Step
       .returning();
     await setSystems(t, step!.id, input.systems ?? []);
     if (input.afterStepId) {
-      await tx
-        .insert(processEdges)
-        .values({
-          versionId: ctx.version.id,
-          fromStepId: input.afterStepId,
-          toStepId: step!.id,
-          type: 'sequence',
-          provenance: 'confirmed',
-        });
+      await tx.insert(processEdges).values({
+        versionId: ctx.version.id,
+        fromStepId: input.afterStepId,
+        toStepId: step!.id,
+        type: 'sequence',
+        provenance: 'confirmed',
+      });
     }
     await record(t, ctx, userId, 'step', step!.id, null);
     await touch(t, ctx.version.id);

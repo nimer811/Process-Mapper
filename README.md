@@ -74,14 +74,14 @@ The container runs migrations and the seed on start (`MIGRATE_ON_START`, `SEED_O
 
 ## Common commands
 
-| Command | What it does |
-|---|---|
-| `pnpm typecheck` | Type-check all packages |
-| `pnpm lint` | ESLint |
-| `pnpm test` | Unit + integration tests (integration tests start a Postgres container) |
-| `pnpm db:generate` | Generate a migration from schema changes in `packages/db/src/schema` |
-| `pnpm db:migrate` | Apply migrations |
-| `pnpm docker:build` | Build the production image |
+| Command             | What it does                                                            |
+| ------------------- | ----------------------------------------------------------------------- |
+| `pnpm typecheck`    | Type-check all packages                                                 |
+| `pnpm lint`         | ESLint                                                                  |
+| `pnpm test`         | Unit + integration tests (integration tests start a Postgres container) |
+| `pnpm db:generate`  | Generate a migration from schema changes in `packages/db/src/schema`    |
+| `pnpm db:migrate`   | Apply migrations                                                        |
+| `pnpm docker:build` | Build the production image                                              |
 
 ## Configuration
 

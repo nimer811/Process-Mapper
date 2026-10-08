@@ -13,7 +13,12 @@ import {
 import type { Db } from '@process-ai/db';
 import { AiSdkGateway, LlmDocumentClassifier, type LlmGateway } from '@process-ai/agent';
 import { documents, eq } from '@process-ai/db';
-import { ingestDocument, LocalFileStore, type Embedder, type FileStore } from '@process-ai/knowledge';
+import {
+  ingestDocument,
+  LocalFileStore,
+  type Embedder,
+  type FileStore,
+} from '@process-ai/knowledge';
 import { createInlineQueue, createPgBossQueue, type JobQueue } from './lib/jobs.js';
 import { knowledgeRoutes, UPLOAD_LIMITS } from './modules/knowledge/routes.js';
 import { governanceRoutes } from './modules/governance/routes.js';
@@ -53,7 +58,10 @@ export function llmFromConfig(config: Config): LlmGateway | null {
   });
 }
 
-export async function buildApp({ config, db, llm, store, jobs }: AppDeps, opts: FastifyServerOptions = {}) {
+export async function buildApp(
+  { config, db, llm, store, jobs }: AppDeps,
+  opts: FastifyServerOptions = {},
+) {
   const gateway = llm === undefined ? llmFromConfig(config) : llm;
   const fileStore = store ?? new LocalFileStore(config.STORAGE_DIR);
   const app = Fastify({
@@ -83,14 +91,19 @@ export async function buildApp({ config, db, llm, store, jobs }: AppDeps, opts: 
       return;
     }
     try {
-      const result = await ingestDocument({ db, store: fileStore, embedder, classifier }, documentId);
+      const result = await ingestDocument(
+        { db, store: fileStore, embedder, classifier },
+        documentId,
+      );
       app.log.info({ documentId, chunks: result?.chunks }, 'Document indexed');
     } catch (err) {
       app.log.warn({ err, documentId }, 'Document indexing failed');
     }
   };
   const queue: JobQueue =
-    jobs === 'inline' ? createInlineQueue(ingest) : await createPgBossQueue(config.DATABASE_URL, ingest, app.log);
+    jobs === 'inline'
+      ? createInlineQueue(ingest)
+      : await createPgBossQueue(config.DATABASE_URL, ingest, app.log);
   app.addHook('onClose', () => queue.stop());
   if (config.CORS_ORIGIN) await app.register(cors, { origin: config.CORS_ORIGIN });
   registerErrorHandling(app);

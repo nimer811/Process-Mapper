@@ -1,7 +1,20 @@
-import { embedMany, generateText, Output, streamText, type EmbeddingModel, type LanguageModel } from 'ai';
+import {
+  embedMany,
+  generateText,
+  Output,
+  streamText,
+  type EmbeddingModel,
+  type LanguageModel,
+} from 'ai';
 import { createOpenAI } from '@ai-sdk/openai';
 import { createAzure } from '@ai-sdk/azure';
-import type { LlmCallRecord, LlmGateway, LlmPurpose, ObjectRequest, TextRequest } from './gateway.js';
+import type {
+  LlmCallRecord,
+  LlmGateway,
+  LlmPurpose,
+  ObjectRequest,
+  TextRequest,
+} from './gateway.js';
 
 export interface AiSdkGatewayConfig {
   provider: 'openai' | 'azure';
@@ -29,7 +42,11 @@ export class AiSdkGateway implements LlmGateway {
     this.timeoutMs = cfg.timeoutMs ?? 60_000;
     const factory =
       cfg.provider === 'azure'
-        ? createAzure({ apiKey: cfg.apiKey, resourceName: cfg.azureResourceName, apiVersion: cfg.azureApiVersion })
+        ? createAzure({
+            apiKey: cfg.apiKey,
+            resourceName: cfg.azureResourceName,
+            apiVersion: cfg.azureApiVersion,
+          })
         : createOpenAI({ apiKey: cfg.apiKey });
     const extractId = cfg.extractionModel || cfg.chatModel;
     this.embedding = factory.embedding(cfg.embeddingModel);
@@ -40,7 +57,10 @@ export class AiSdkGateway implements LlmGateway {
   }
 
   private pick(purpose: LlmPurpose) {
-    return purpose === 'extract' || purpose === 'analyse_turn' || purpose === 'analyse' || purpose === 'design'
+    return purpose === 'extract' ||
+      purpose === 'analyse_turn' ||
+      purpose === 'analyse' ||
+      purpose === 'design'
       ? this.models.extract
       : this.models.chat;
   }

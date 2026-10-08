@@ -25,7 +25,11 @@ export function chunkBlocks(blocks: Block[]): Chunk[] {
   let buf: string[] = [];
   let len = 0;
   let key: string | null = null;
-  let meta: { headingPath: string | null; page: number | null; sheet: string | null } = { headingPath: null, page: null, sheet: null };
+  let meta: { headingPath: string | null; page: number | null; sheet: string | null } = {
+    headingPath: null,
+    page: null,
+    sheet: null,
+  };
 
   const flush = () => {
     if (!buf.length) return;
@@ -77,5 +81,7 @@ function splitLong(text: string): string[] {
     cur += s;
   }
   if (cur.trim()) out.push(cur.trim());
-  return out.flatMap((p) => (p.length > MAX_CHARS ? p.match(new RegExp(`.{1,${TARGET_CHARS}}`, 'gs')) ?? [p] : [p]));
+  return out.flatMap((p) =>
+    p.length > MAX_CHARS ? (p.match(new RegExp(`.{1,${TARGET_CHARS}}`, 'gs')) ?? [p]) : [p],
+  );
 }

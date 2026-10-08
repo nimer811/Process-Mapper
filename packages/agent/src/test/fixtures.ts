@@ -59,7 +59,13 @@ export function state(partial: Partial<InterviewState> = {}): InterviewState {
       stageEnteredTurn: 0,
       ...partial.session,
     },
-    process: { name: 'Vendor Onboarding', departmentId: uid(), departmentName: 'Procurement', isUntitled: false, ...partial.process },
+    process: {
+      name: 'Vendor Onboarding',
+      departmentId: uid(),
+      departmentName: 'Procurement',
+      isUntitled: false,
+      ...partial.process,
+    },
     version: {
       description: null,
       purpose: null,
@@ -78,7 +84,12 @@ export function state(partial: Partial<InterviewState> = {}): InterviewState {
   };
 }
 
-export const edge = (from: StepState, to: StepState, type: 'sequence' | 'branch' | 'exception' | 'loop_back' = 'sequence', conditionLabel: string | null = null) => ({
+export const edge = (
+  from: StepState,
+  to: StepState,
+  type: 'sequence' | 'branch' | 'exception' | 'loop_back' = 'sequence',
+  conditionLabel: string | null = null,
+) => ({
   id: uid(),
   fromStepId: from.id,
   toStepId: to.id,

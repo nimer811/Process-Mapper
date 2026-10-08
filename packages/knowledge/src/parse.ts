@@ -16,18 +16,28 @@ export interface Block {
 
 export class NoTextError extends Error {
   constructor() {
-    super('No text could be extracted. If this is a scanned PDF, upload a text-based version (OCR is not supported yet).');
+    super(
+      'No text could be extracted. If this is a scanned PDF, upload a text-based version (OCR is not supported yet).',
+    );
   }
 }
 
-const clean = (s: string) => s.replace(/\u00a0/g, ' ').replace(/[ \t]+/g, ' ').replace(/\s*\n\s*/g, '\n').trim();
+const clean = (s: string) =>
+  s
+    .replace(/\u00a0/g, ' ')
+    .replace(/[ \t]+/g, ' ')
+    .replace(/\s*\n\s*/g, '\n')
+    .trim();
 
 export async function parseDocument(buffer: Buffer, kind: FileKind): Promise<Block[]> {
   const blocks =
-    kind === 'pdf' ? await parsePdf(buffer)
-    : kind === 'docx' ? await parseDocx(buffer)
-    : kind === 'xlsx' ? parseXlsx(buffer)
-    : parseText(buffer.toString('utf8'));
+    kind === 'pdf'
+      ? await parsePdf(buffer)
+      : kind === 'docx'
+        ? await parseDocx(buffer)
+        : kind === 'xlsx'
+          ? parseXlsx(buffer)
+          : parseText(buffer.toString('utf8'));
   if (!blocks.some((b) => b.text.trim().length > 0)) throw new NoTextError();
   return blocks;
 }
@@ -82,14 +92,19 @@ async function parseDocx(buffer: Buffer): Promise<Block[]> {
 
 /** Each table row becomes "Header: value | Header: value", so thresholds keep their meaning. */
 function tableRows(table: HTMLElement, headings: string[]): Block[] {
-  const rows = table.querySelectorAll('tr').map((tr) => tr.querySelectorAll('th,td').map((c) => clean(c.text)));
+  const rows = table
+    .querySelectorAll('tr')
+    .map((tr) => tr.querySelectorAll('th,td').map((c) => clean(c.text)));
   if (rows.length === 0) return [];
   const [header, ...body] = rows;
   if (!body.length) return [{ text: header!.join(' | '), headings, kind: 'row' }];
   return body
     .filter((r) => r.some(Boolean))
     .map((r) => ({
-      text: r.map((v, i) => (header![i] ? `${header![i]}: ${v}` : v)).filter((x) => x && !x.endsWith(': ')).join(' | '),
+      text: r
+        .map((v, i) => (header![i] ? `${header![i]}: ${v}` : v))
+        .filter((x) => x && !x.endsWith(': '))
+        .join(' | '),
       headings,
       kind: 'row' as const,
     }));
@@ -97,13 +112,25 @@ function tableRows(table: HTMLElement, headings: string[]): Block[] {
 
 /** XLSX: every row is serialised with its column headers (approval matrices, DoA tables). */
 function parseXlsx(buffer: Buffer): Block[] {
-  const wb = XLSX.read(buffer, { type: 'buffer', cellDates: true, cellFormula: false, cellHTML: false });
+  const wb = XLSX.read(buffer, {
+    type: 'buffer',
+    cellDates: true,
+    cellFormula: false,
+    cellHTML: false,
+  });
   const blocks: Block[] = [];
   for (const sheetName of wb.SheetNames) {
     const sheet = wb.Sheets[sheetName];
     if (!sheet) continue;
-    const rows = XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1, blankrows: false, defval: '', raw: false });
-    const nonEmpty = rows.map((r) => r.map((v) => clean(String(v ?? '')))).filter((r) => r.some(Boolean));
+    const rows = XLSX.utils.sheet_to_json<unknown[]>(sheet, {
+      header: 1,
+      blankrows: false,
+      defval: '',
+      raw: false,
+    });
+    const nonEmpty = rows
+      .map((r) => r.map((v) => clean(String(v ?? ''))))
+      .filter((r) => r.some(Boolean));
     if (!nonEmpty.length) continue;
     // Header = first row with at least two filled cells.
     const headerIdx = nonEmpty.findIndex((r) => r.filter(Boolean).length >= 2);

@@ -18,5 +18,9 @@ export function initSystemTheme() {
 }
 
 export function useColorScheme(): 'light' | 'dark' {
-  return useSyncExternalStore(subscribe, () => (isDark() ? 'dark' : 'light'), () => 'light');
+  return useSyncExternalStore(
+    subscribe,
+    () => (isDark() ? 'dark' : 'light'),
+    () => 'light',
+  );
 }

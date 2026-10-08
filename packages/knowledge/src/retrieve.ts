@@ -31,7 +31,11 @@ const CANDIDATES = 20;
  * "AED 50,000" or form numbers), merged with reciprocal-rank fusion. Only active, indexed
  * documents in active knowledge bases are searched.
  */
-export async function searchKnowledge(db: Db, embedder: Embedder, opts: SearchOptions): Promise<SearchResult[]> {
+export async function searchKnowledge(
+  db: Db,
+  embedder: Embedder,
+  opts: SearchOptions,
+): Promise<SearchResult[]> {
   const query = opts.query.trim().slice(0, 2000);
   if (!query) return [];
   const limit = opts.limit ?? 5;
@@ -103,7 +107,15 @@ export async function searchKnowledge(db: Db, embedder: Embedder, opts: SearchOp
 }
 
 /** Short human reference for a result, e.g. "Procurement Policy, 4.2 Approvals" or "DoA Matrix, sheet Goods". */
-export function citationLabel(r: Pick<SearchResult, 'documentTitle' | 'headingPath' | 'page' | 'sheet'>) {
-  const where = r.sheet ? `sheet ${r.sheet}` : r.headingPath ? r.headingPath.split(' > ').at(-1) : r.page ? `p. ${r.page}` : null;
+export function citationLabel(
+  r: Pick<SearchResult, 'documentTitle' | 'headingPath' | 'page' | 'sheet'>,
+) {
+  const where = r.sheet
+    ? `sheet ${r.sheet}`
+    : r.headingPath
+      ? r.headingPath.split(' > ').at(-1)
+      : r.page
+        ? `p. ${r.page}`
+        : null;
   return where ? `${r.documentTitle}, ${where}` : r.documentTitle;
 }

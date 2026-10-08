@@ -37,7 +37,11 @@ interface StepSpec {
   approvalAuthority?: string;
   painPoints?: string[];
   provenance?: Provenance;
-  rules?: { type: 'threshold' | 'approval' | 'compliance' | 'sla' | 'control' | 'other'; statement: string; provenance?: Provenance }[];
+  rules?: {
+    type: 'threshold' | 'approval' | 'compliance' | 'sla' | 'control' | 'other';
+    statement: string;
+    provenance?: Provenance;
+  }[];
 }
 
 interface ProcessSpec {
@@ -98,7 +102,12 @@ const vendorOnboarding: ProcessSpec = {
       duration: '10 minutes',
       sla: '1 business day',
     },
-    { key: 'S4', type: 'decision', name: 'Vendor already registered?', actor: 'Procurement Officer' },
+    {
+      key: 'S4',
+      type: 'decision',
+      name: 'Vendor already registered?',
+      actor: 'Procurement Officer',
+    },
     {
       key: 'S5',
       name: 'Extend existing vendor to company code',
@@ -147,7 +156,12 @@ const vendorOnboarding: ProcessSpec = {
         },
       ],
     },
-    { key: 'S9', type: 'decision', name: 'Documents complete and compliant?', actor: 'Procurement Officer' },
+    {
+      key: 'S9',
+      type: 'decision',
+      name: 'Documents complete and compliant?',
+      actor: 'Procurement Officer',
+    },
     {
       key: 'S10',
       name: 'Request missing documents',
@@ -345,7 +359,10 @@ async function createProcess(
     for (const [i, s] of spec.steps.entries()) {
       const prov = s.provenance ?? (isValidated ? 'confirmed' : 'stated');
       const actorId = s.actor
-        ? await upsertActor(t, s.actor, { kind: s.actorKind ?? 'role', departmentId: ctx.departmentId })
+        ? await upsertActor(t, s.actor, {
+            kind: s.actorKind ?? 'role',
+            departmentId: ctx.departmentId,
+          })
         : null;
       const [step] = await tx
         .insert(processSteps)
@@ -370,7 +387,9 @@ async function createProcess(
       stepIds.set(s.key, step!.id);
 
       for (const sys of s.systems ?? []) {
-        await tx.insert(stepSystems).values({ stepId: step!.id, systemId: await upsertSystem(t, sys) });
+        await tx
+          .insert(stepSystems)
+          .values({ stepId: step!.id, systemId: await upsertSystem(t, sys) });
       }
       for (const r of s.rules ?? []) {
         await tx.insert(businessRules).values({
@@ -402,14 +421,19 @@ async function createProcess(
     }
 
     if (isValidated) {
-      await tx.update(processes).set({ currentVersionId: versionId }).where(eq(processes.id, proc!.id));
-      await tx.insert(validationEvents).values([
-        { versionId, action: 'submitted', actorUserId: ctx.ownerId },
-        { versionId, action: 'validated', actorUserId: ctx.ownerId },
-        ...(spec.status === 'approved'
-          ? [{ versionId, action: 'approved' as const, actorUserId: ctx.adminId }]
-          : []),
-      ]);
+      await tx
+        .update(processes)
+        .set({ currentVersionId: versionId })
+        .where(eq(processes.id, proc!.id));
+      await tx
+        .insert(validationEvents)
+        .values([
+          { versionId, action: 'submitted', actorUserId: ctx.ownerId },
+          { versionId, action: 'validated', actorUserId: ctx.ownerId },
+          ...(spec.status === 'approved'
+            ? [{ versionId, action: 'approved' as const, actorUserId: ctx.adminId }]
+            : []),
+        ]);
     }
   });
 }

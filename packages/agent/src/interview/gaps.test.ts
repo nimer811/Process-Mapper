@@ -8,15 +8,35 @@ const keys = (s: ReturnType<typeof state>) => analyzeGaps(s).map((g) => g.gapKey
 
 describe('analyzeGaps', () => {
   it('asks for scoping facts on an empty process', () => {
-    const k = keys(state({ process: { name: 'Untitled process', departmentId: 'd', departmentName: 'Procurement', isUntitled: true } }));
-    expect(k).toEqual(expect.arrayContaining(['process:name', 'process:trigger', 'process:end_condition', 'process:purpose', 'process:owner_role']));
+    const k = keys(
+      state({
+        process: {
+          name: 'Untitled process',
+          departmentId: 'd',
+          departmentName: 'Procurement',
+          isUntitled: true,
+        },
+      }),
+    );
+    expect(k).toEqual(
+      expect.arrayContaining([
+        'process:name',
+        'process:trigger',
+        'process:end_condition',
+        'process:purpose',
+        'process:owner_role',
+      ]),
+    );
   });
 
   it('finds dangling steps, missing actors and decisions without enough branches', () => {
     const start = step('S1', { type: 'start' });
     const review = step('S2', { name: 'Review request' });
     const decide = step('S3', { type: 'decision', name: 'Approved?' });
-    const s = state({ steps: [start, review, decide], edges: [edge(start, review), edge(review, decide)] });
+    const s = state({
+      steps: [start, review, decide],
+      edges: [edge(start, review), edge(review, decide)],
+    });
     const k = keys(s);
     expect(k).toContain(`step:${decide.id}:next`);
     expect(k).toContain(`step:${review.id}:actor`);
@@ -36,7 +56,15 @@ describe('analyzeGaps', () => {
     const end = step('S3', { type: 'end' });
     const empty = state();
     const full = state({
-      version: { purpose: 'p', trigger: 't', endCondition: 'e', ownerRole: 'o', description: null, frequency: null, volume: null },
+      version: {
+        purpose: 'p',
+        trigger: 't',
+        endCondition: 'e',
+        ownerRole: 'o',
+        description: null,
+        frequency: null,
+        volume: null,
+      },
       steps: [start, t, end],
       edges: [edge(start, t), edge(t, end)],
     });
@@ -47,7 +75,17 @@ describe('analyzeGaps', () => {
 
 describe('nextStage', () => {
   it('moves from scoping to happy path once trigger, end and name are known', () => {
-    const s = state({ version: { trigger: 'PR raised', endCondition: 'PO sent', purpose: null, ownerRole: null, description: null, frequency: null, volume: null } });
+    const s = state({
+      version: {
+        trigger: 'PR raised',
+        endCondition: 'PO sent',
+        purpose: null,
+        ownerRole: null,
+        description: null,
+        frequency: null,
+        volume: null,
+      },
+    });
     expect(nextStage(s, analyzeGaps(s), { userIntent: 'continue' })).toBe('happy_path');
   });
 
@@ -75,7 +113,11 @@ describe('selectQuestions', () => {
     const actor = item({ entityType: 'step', entityId: stepId, priority: 70 });
     const system = item({ entityType: 'step', entityId: stepId, priority: 60 });
     const other = item({ priority: 65 });
-    const picked = selectQuestions(state({ openItems: [actor, system, other] }), [actor, system, other], 'step_detail');
+    const picked = selectQuestions(
+      state({ openItems: [actor, system, other] }),
+      [actor, system, other],
+      'step_detail',
+    );
     expect(picked.map((p) => p.id)).toEqual([actor.id, system.id]);
   });
 
@@ -83,14 +125,24 @@ describe('selectQuestions', () => {
     const justAsked = item({ priority: 90, status: 'asked', timesAsked: 1, lastAskedTurn: 3 });
     const exhausted = item({ priority: 95, status: 'asked', timesAsked: 2, lastAskedTurn: 1 });
     const fresh = item({ priority: 40 });
-    const s = state({ session: { turnCount: 4 } as never, openItems: [justAsked, exhausted, fresh] });
+    const s = state({
+      session: { turnCount: 4 } as never,
+      openItems: [justAsked, exhausted, fresh],
+    });
     expect(selectQuestions(s, s.openItems, 'happy_path')[0]!.id).toBe(fresh.id);
   });
 
   it('holds back questions for later stages', () => {
     const later = item({ priority: 90 });
     const now = item({ priority: 30 });
-    const picked = selectQuestions(state(), [{ ...later, stage: 'rules_controls_pain' }, { ...now, stage: 'scoping' }], 'scoping');
+    const picked = selectQuestions(
+      state(),
+      [
+        { ...later, stage: 'rules_controls_pain' },
+        { ...now, stage: 'scoping' },
+      ],
+      'scoping',
+    );
     expect(picked[0]!.id).toBe(now.id);
   });
 });

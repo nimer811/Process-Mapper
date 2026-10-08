@@ -9,7 +9,11 @@ describe('extraction schema', () => {
     // Every object lists all its properties as required (nullable instead of optional).
     const check = (node: unknown): void => {
       if (!node || typeof node !== 'object') return;
-      const n = node as { type?: string; properties?: Record<string, unknown>; required?: string[] };
+      const n = node as {
+        type?: string;
+        properties?: Record<string, unknown>;
+        required?: string[];
+      };
       if (n.type === 'object' && n.properties) {
         expect(new Set(n.required ?? [])).toEqual(new Set(Object.keys(n.properties)));
       }
