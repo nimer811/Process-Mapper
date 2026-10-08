@@ -1,5 +1,9 @@
 import { stageIndex, type InterviewState, type OpenItemState } from './state.js';
 import type { InterviewStage } from '@process-ai/shared';
+import { isConfirmation } from './gaps.js';
+
+/** Read-backs are bundled into one question, up to this many points at a time. */
+const MAX_READ_BACK = 6;
 
 /** Items stop being asked after this many attempts (the user may not know). */
 export const MAX_TIMES_ASKED = 2;
@@ -17,13 +21,22 @@ export function selectQuestions(
   state: InterviewState,
   items: (OpenItemState & { stage?: InterviewStage })[],
   stage: InterviewStage,
+  /** Read back the AI's inferences now (playback turns and before the summary), as one question. */
+  opts: { readBack?: boolean } = {},
 ): OpenItemState[] {
   const turn = state.session.turnCount;
   const focus = state.session.focusStepId;
-
-  const candidates: ScoredItem[] = items
+  const askable = items
     .filter((i) => i.status === 'open' || i.status === 'asked')
-    .filter((i) => i.timesAsked < MAX_TIMES_ASKED)
+    .filter((i) => i.timesAsked < MAX_TIMES_ASKED);
+
+  if (opts.readBack) {
+    const readBack = askable.filter(isConfirmation).slice(0, MAX_READ_BACK);
+    if (readBack.length) return readBack;
+  }
+
+  const candidates: ScoredItem[] = askable
+    .filter((i) => !isConfirmation(i))
     .filter((i) => !i.stage || stageIndex(i.stage) <= stageIndex(stage))
     .map((item) => {
       let score = item.priority;

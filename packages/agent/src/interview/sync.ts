@@ -1,6 +1,6 @@
 import { and, eq, inArray } from 'drizzle-orm';
 import { openItems, type Db } from '@process-ai/db';
-import type { Gap } from './gaps.js';
+import { isConfirmation, type Gap } from './gaps.js';
 import { MAX_TIMES_ASKED } from './policy.js';
 import type { InterviewState } from './state.js';
 
@@ -37,19 +37,41 @@ export async function syncOpenItems(db: Db, state: InterviewState, gaps: Gap[], 
       .onConflictDoNothing();
   }
 
+  // A read-back that comes back (the element is inferred again, e.g. sent back from validation) is asked afresh.
+  const reopened = gaps
+    .map((g) => byKey.get(g.gapKey))
+    .filter((i) => i && isConfirmation(i) && i.status === 'resolved')
+    .map((i) => i!.id);
+  if (reopened.length) {
+    await db
+      .update(openItems)
+      .set({ status: 'open', timesAsked: 0, lastAskedTurn: null, resolution: null })
+      .where(and(eq(openItems.sessionId, sessionId), inArray(openItems.id, reopened)));
+  }
+
   const active = state.openItems.filter((i) => i.status === 'open' || i.status === 'asked');
-  const answered = active.filter((i) => i.source === 'gap_analysis' && i.gapKey && !gapKeys.has(i.gapKey)).map((i) => i.id);
+  const answered = active
+    .filter((i) => i.source === 'gap_analysis' && i.gapKey && !gapKeys.has(i.gapKey))
+    .map((i) => i.id);
   // Standard questions are resolved when an answer addresses them (extractor or analyst), not just by being asked.
   const probesDone: string[] = [];
   const exhausted = active
-    .filter((i) => i.timesAsked >= MAX_TIMES_ASKED && !answered.includes(i.id) && !probesDone.includes(i.id))
+    .filter(
+      (i) =>
+        i.timesAsked >= MAX_TIMES_ASKED && !answered.includes(i.id) && !probesDone.includes(i.id),
+    )
     .map((i) => i.id);
 
   if (answered.length || probesDone.length) {
     await db
       .update(openItems)
       .set({ status: 'resolved', resolution: 'answered' })
-      .where(and(eq(openItems.sessionId, sessionId), inArray(openItems.id, [...answered, ...probesDone])));
+      .where(
+        and(
+          eq(openItems.sessionId, sessionId),
+          inArray(openItems.id, [...answered, ...probesDone]),
+        ),
+      );
   }
   if (exhausted.length) {
     await db
@@ -60,8 +82,15 @@ export async function syncOpenItems(db: Db, state: InterviewState, gaps: Gap[], 
   // Refresh descriptions of existing gap items (step names can change).
   for (const g of gaps) {
     const item = byKey.get(g.gapKey);
-    if (item && item.description !== g.description && (item.status === 'open' || item.status === 'asked')) {
-      await db.update(openItems).set({ description: g.description }).where(eq(openItems.id, item.id));
+    if (
+      item &&
+      item.description !== g.description &&
+      (item.status === 'open' || item.status === 'asked')
+    ) {
+      await db
+        .update(openItems)
+        .set({ description: g.description })
+        .where(eq(openItems.id, item.id));
     }
   }
 }

@@ -78,7 +78,8 @@ export async function applyOps(tx: Db, ctx: ApplyContext, ops: ValidOp[]): Promi
 
   const idOf = (t: StepTarget | null | undefined) =>
     !t ? null : t.kind === 'existing' ? t.id : (refIds.get(t.ref) ?? null);
-  const nameOf = (id: string | null) => (id ? (stepById.get(id)?.name ?? newNames.get(id) ?? 'step') : 'process');
+  const nameOf = (id: string | null) =>
+    id ? (stepById.get(id)?.name ?? newNames.get(id) ?? 'step') : 'process';
   const newNames = new Map<string, string>();
   const typeOf = (id: string) => stepById.get(id)?.type ?? newTypes.get(id);
   const newTypes = new Map<string, string>();
@@ -96,7 +97,8 @@ export async function applyOps(tx: Db, ctx: ApplyContext, ops: ValidOp[]): Promi
       entityType,
       entityId,
       field,
-      sourceType: prov === 'stated' ? 'user_statement' : prov === 'documented' ? 'document' : 'ai_inference',
+      sourceType:
+        prov === 'stated' ? 'user_statement' : prov === 'documented' ? 'document' : 'ai_inference',
       messageId: ctx.messageId,
       chunkId,
       quote: prov === 'stated' ? quote : null,
@@ -104,10 +106,23 @@ export async function applyOps(tx: Db, ctx: ApplyContext, ops: ValidOp[]): Promi
     });
   };
 
-  const insertEdge = async (from: string, to: string, type: typeof processEdges.$inferInsert.type, label: string | null, prov: Provenance) => {
+  const insertEdge = async (
+    from: string,
+    to: string,
+    type: typeof processEdges.$inferInsert.type,
+    label: string | null,
+    prov: Provenance,
+  ) => {
     const [edge] = await tx
       .insert(processEdges)
-      .values({ versionId, fromStepId: from, toStepId: to, type, conditionLabel: label, provenance: prov })
+      .values({
+        versionId,
+        fromStepId: from,
+        toStepId: to,
+        type,
+        conditionLabel: label,
+        provenance: prov,
+      })
       .onConflictDoNothing()
       .returning();
     return edge;
@@ -120,7 +135,8 @@ export async function applyOps(tx: Db, ctx: ApplyContext, ops: ValidOp[]): Promi
     switch (op.op) {
       case 'set_process_field': {
         // Models often repeat facts they already gave; don't re-record unchanged values.
-        const current = op.field === 'name' ? state.process.name : state.version[fieldColumn[op.field]];
+        const current =
+          op.field === 'name' ? state.process.name : state.version[fieldColumn[op.field]];
         if (current && normalizeName(current) === normalizeName(op.value)) break;
         if (op.field === 'name') {
           const name = op.value.trim().slice(0, 120);
@@ -129,11 +145,19 @@ export async function applyOps(tx: Db, ctx: ApplyContext, ops: ValidOp[]): Promi
           const taken = await tx
             .select({ slug: processes.slug })
             .from(processes)
-            .where(and(sql`${processes.slug} like ${base + '%'}`, sql`${processes.id} <> ${state.session.processId}`));
+            .where(
+              and(
+                sql`${processes.slug} like ${base + '%'}`,
+                sql`${processes.id} <> ${state.session.processId}`,
+              ),
+            );
           const slugs = new Set(taken.map((t) => t.slug));
           let slug = base;
           for (let n = 2; slugs.has(slug); n++) slug = `${base}-${n}`;
-          await tx.update(processes).set({ name, slug }).where(eq(processes.id, state.session.processId));
+          await tx
+            .update(processes)
+            .set({ name, slug })
+            .where(eq(processes.id, state.session.processId));
           changes.push(`Named the process "${name}"`);
         } else {
           await tx
@@ -148,7 +172,9 @@ export async function applyOps(tx: Db, ctx: ApplyContext, ops: ValidOp[]): Promi
 
       case 'add_step': {
         const stepKey = `S${++maxKey}`;
-        const actorId = op.actor ? await upsertActor(tx, op.actor, { departmentId: ctx.departmentId }) : null;
+        const actorId = op.actor
+          ? await upsertActor(tx, op.actor, { departmentId: ctx.departmentId })
+          : null;
         const [step] = await tx
           .insert(processSteps)
           .values({
@@ -173,16 +199,27 @@ export async function applyOps(tx: Db, ctx: ApplyContext, ops: ValidOp[]): Promi
         newNames.set(id, step!.name);
         newTypes.set(id, step!.type);
         for (const name of uniq(op.systems)) {
-          await tx.insert(stepSystems).values({ stepId: id, systemId: await upsertSystem(tx, name) }).onConflictDoNothing();
+          await tx
+            .insert(stepSystems)
+            .values({ stepId: id, systemId: await upsertSystem(tx, name) })
+            .onConflictDoNothing();
         }
         const after = idOf(op.targets.after);
         if (after) {
           const fromDecision = typeOf(after) === 'decision';
-          await insertEdge(after, id, fromDecision || op.after_label ? 'branch' : 'sequence', op.after_label, prov);
+          await insertEdge(
+            after,
+            id,
+            fromDecision || op.after_label ? 'branch' : 'sequence',
+            op.after_label,
+            prov,
+          );
         }
         await recordEvidence('step', id, prov, quote);
         focusStepId = id;
-        changes.push(`Added ${op.type === 'task' ? 'step' : op.type} "${step!.name}"${prov === 'inferred' ? ' (inferred)' : ''}`);
+        changes.push(
+          `Added ${op.type === 'task' ? 'step' : op.type} "${step!.name}"${prov === 'inferred' ? ' (inferred)' : ''}`,
+        );
         break;
       }
 
@@ -193,19 +230,25 @@ export async function applyOps(tx: Db, ctx: ApplyContext, ops: ValidOp[]): Promi
         if (op.name) set.name = op.name.trim();
         if (op.type) set.type = op.type;
         if (op.description) set.description = op.description;
-        if (op.actor) set.actorId = await upsertActor(tx, op.actor, { departmentId: ctx.departmentId });
+        if (op.actor)
+          set.actorId = await upsertActor(tx, op.actor, { departmentId: ctx.departmentId });
         if (op.no_system) set.noSystem = true;
         if (op.add_inputs.length) set.inputs = uniq([...(current?.inputs ?? []), ...op.add_inputs]);
-        if (op.add_outputs.length) set.outputs = uniq([...(current?.outputs ?? []), ...op.add_outputs]);
+        if (op.add_outputs.length)
+          set.outputs = uniq([...(current?.outputs ?? []), ...op.add_outputs]);
         if (op.execution) set.execution = op.execution;
         if (op.expected_duration) set.expectedDuration = op.expected_duration;
         if (op.sla) set.sla = op.sla;
         if (op.approval_authority) set.approvalAuthority = op.approval_authority;
         // The employee talking about an AI-inferred step in their own words makes it stated.
         if (prov === 'stated' && current?.provenance === 'inferred') set.provenance = 'stated';
-        if (Object.keys(set).length) await tx.update(processSteps).set(set).where(eq(processSteps.id, id));
+        if (Object.keys(set).length)
+          await tx.update(processSteps).set(set).where(eq(processSteps.id, id));
         for (const name of uniq(op.add_systems)) {
-          await tx.insert(stepSystems).values({ stepId: id, systemId: await upsertSystem(tx, name) }).onConflictDoNothing();
+          await tx
+            .insert(stepSystems)
+            .values({ stepId: id, systemId: await upsertSystem(tx, name) })
+            .onConflictDoNothing();
         }
         const fields = [
           ...Object.keys(set).filter((k) => k !== 'provenance'),
@@ -225,7 +268,9 @@ export async function applyOps(tx: Db, ctx: ApplyContext, ops: ValidOp[]): Promi
         const edge = await insertEdge(from, to, type, op.condition_label, prov);
         if (edge) {
           await recordEvidence('edge', edge.id, prov, quote);
-          changes.push(`Connected "${nameOf(from)}" → "${nameOf(to)}"${op.condition_label ? ` when "${op.condition_label}"` : ''}`);
+          changes.push(
+            `Connected "${nameOf(from)}" → "${nameOf(to)}"${op.condition_label ? ` when "${op.condition_label}"` : ''}`,
+          );
         }
         break;
       }
@@ -235,17 +280,29 @@ export async function applyOps(tx: Db, ctx: ApplyContext, ops: ValidOp[]): Promi
         const to = idOf(op.targets.to)!;
         const removed = await tx
           .delete(processEdges)
-          .where(and(eq(processEdges.versionId, versionId), eq(processEdges.fromStepId, from), eq(processEdges.toStepId, to)))
+          .where(
+            and(
+              eq(processEdges.versionId, versionId),
+              eq(processEdges.fromStepId, from),
+              eq(processEdges.toStepId, to),
+            ),
+          )
           .returning();
-        if (removed.length) changes.push(`Removed connection "${nameOf(from)}" → "${nameOf(to)}" (${op.reason})`);
+        if (removed.length)
+          changes.push(`Removed connection "${nameOf(from)}" → "${nameOf(to)}" (${op.reason})`);
         break;
       }
 
       case 'remove_step': {
         const id = idOf(op.targets.step)!;
         const name = nameOf(id);
-        await tx.delete(processSteps).where(and(eq(processSteps.id, id), eq(processSteps.versionId, versionId)));
-        await tx.update(openItems).set({ status: 'resolved', resolution: 'step removed' }).where(eq(openItems.entityId, id));
+        await tx
+          .delete(processSteps)
+          .where(and(eq(processSteps.id, id), eq(processSteps.versionId, versionId)));
+        await tx
+          .update(openItems)
+          .set({ status: 'resolved', resolution: 'step removed' })
+          .where(eq(openItems.entityId, id));
         if (state.session.focusStepId === id || focusStepId === id) focusStepId = null;
         changes.push(`Removed step "${name}" (${op.reason})`);
         break;
@@ -255,10 +312,18 @@ export async function applyOps(tx: Db, ctx: ApplyContext, ops: ValidOp[]): Promi
         const stepId = idOf(op.targets.step);
         const [rule] = await tx
           .insert(businessRules)
-          .values({ versionId, stepId, ruleType: op.rule_type, statement: op.statement.trim(), provenance: prov })
+          .values({
+            versionId,
+            stepId,
+            ruleType: op.rule_type,
+            statement: op.statement.trim(),
+            provenance: prov,
+          })
           .returning();
         await recordEvidence('rule', rule!.id, prov, quote, null, op.sourceChunkId ?? null);
-        changes.push(`Recorded ${prov === 'documented' ? 'SOP rule' : 'rule'}: ${op.statement.trim()}`);
+        changes.push(
+          `Recorded ${prov === 'documented' ? 'SOP rule' : 'rule'}: ${op.statement.trim()}`,
+        );
         break;
       }
 
@@ -273,12 +338,28 @@ export async function applyOps(tx: Db, ctx: ApplyContext, ops: ValidOp[]): Promi
         break;
       }
 
-      case 'resolve_open_item':
+      case 'resolve_open_item': {
         await tx
           .update(openItems)
           .set({ status: 'resolved', resolution: op.resolution })
           .where(and(eq(openItems.id, op.openItemId!), eq(openItems.sessionId, state.session.id)));
+        // The employee confirmed a read-back: the inferred element is now their statement.
+        const item = state.openItems.find((i) => i.id === op.openItemId);
+        const [, kind, entityId] = item?.gapKey?.split(':') ?? [];
+        if (item?.gapKey?.startsWith('confirm:') && entityId) {
+          const table = kind === 'step' ? processSteps : kind === 'edge' ? processEdges : businessRules;
+          const updated = await tx
+            .update(table)
+            .set({ provenance: 'stated' })
+            .where(and(eq(table.id, entityId), eq(table.versionId, versionId), eq(table.provenance, 'inferred')))
+            .returning({ id: table.id });
+          if (updated.length) {
+            await recordEvidence(kind!, entityId, 'stated', op.resolution, 'confirmed');
+            changes.push(`Confirmed: ${item.description.replace(/^Confirm (that )?/, '')}`);
+          }
+        }
         break;
+      }
 
       case 'raise_item': {
         const stepId = idOf(op.targets.step);
@@ -305,4 +386,3 @@ export async function applyOps(tx: Db, ctx: ApplyContext, ops: ValidOp[]): Promi
 
   return { changes, focusStepId };
 }
-

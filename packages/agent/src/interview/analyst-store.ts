@@ -3,6 +3,7 @@ import { openItems, type Db } from '@process-ai/db';
 import type { AnalystResult, FindingKind } from './analyst.js';
 import { openItemLabels } from './validate.js';
 import { isWorkStep, type InterviewState } from './state.js';
+import { similar } from './text.js';
 
 const PRIORITY = { high: 88, medium: 66, low: 42 } as const;
 
@@ -17,24 +18,15 @@ const TYPE: Record<FindingKind, 'question' | 'ambiguity'> = {
   practice_gap: 'question',
 };
 
-const words = (s: string) => new Set(s.toLowerCase().match(/[\p{L}\p{N}]{3,}/gu) ?? []);
-/** Overlap of significant words; used to skip near-duplicate questions. */
-function similar(a: string, b: string) {
-  const wa = words(a);
-  const wb = words(b);
-  if (!wa.size || !wb.size) return false;
-  let common = 0;
-  for (const w of wa) if (wb.has(w)) common++;
-  return common / Math.min(wa.size, wb.size) >= 0.6;
-}
-
 /**
  * Turns the analyst's findings into open items (skipping near-duplicates of what's already open)
  * and resolves the questions the latest answer addressed.
  */
 export async function storeAnalystFindings(db: Db, state: InterviewState, result: AnalystResult) {
   const labels = openItemLabels(state);
-  const answered = result.addressed.map((l) => labels.get(l.trim())).filter((x): x is string => !!x);
+  const answered = result.addressed
+    .map((l) => labels.get(l.trim()))
+    .filter((x): x is string => !!x);
   if (answered.length) {
     await db
       .update(openItems)
@@ -43,11 +35,15 @@ export async function storeAnalystFindings(db: Db, state: InterviewState, result
   }
 
   const byKey = new Map(state.steps.map((s) => [s.stepKey.toUpperCase(), s.id]));
-  const active = state.openItems.filter((i) => (i.status === 'open' || i.status === 'asked') && !answered.includes(i.id));
+  const active = state.openItems.filter(
+    (i) => (i.status === 'open' || i.status === 'asked') && !answered.includes(i.id),
+  );
   const recent = state.openItems.filter((i) => i.source === 'analyst');
   for (const f of result.findings) {
     const entityId = f.step ? (byKey.get(f.step.trim().toUpperCase()) ?? null) : null;
-    const duplicate = [...active, ...recent].some((i) => (i.entityId ?? null) === entityId && similar(i.description, f.question));
+    const duplicate = [...active, ...recent].some(
+      (i) => (i.entityId ?? null) === entityId && similar(i.description, f.question),
+    );
     if (duplicate) continue;
     await db.insert(openItems).values({
       sessionId: state.session.id,

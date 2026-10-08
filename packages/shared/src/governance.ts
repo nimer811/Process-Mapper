@@ -48,6 +48,8 @@ export const Readiness = z.object({
   /** Owner/admin viewing the current As-Is, with no To-Be design in progress. */
   canDesignToBe: z.boolean(),
   canArchive: z.boolean(),
+  /** Owner/admin may send open points back to the interviewee (the interview behind this version is finished). */
+  canSendBack: z.boolean(),
   blockers: z.array(Blocker),
 });
 export type Readiness = z.infer<typeof Readiness>;
@@ -60,6 +62,10 @@ export const HistoryEvent = z.object({
   createdAt: z.iso.datetime(),
 });
 export type HistoryEvent = z.infer<typeof HistoryEvent>;
+
+export const SendBackInput = z.object({
+  comment: z.string().trim().max(1000).optional(),
+});
 
 export const ProcessPatch = z.object({
   name: z.string().trim().min(2).max(120).optional(),
@@ -132,7 +138,13 @@ export const EvidenceItem = z.object({
   entityType: z.string(),
   entityId: z.uuid(),
   field: z.string().nullable(),
-  sourceType: z.enum(['user_statement', 'document', 'ai_inference', 'user_validation', 'manual_edit']),
+  sourceType: z.enum([
+    'user_statement',
+    'document',
+    'ai_inference',
+    'user_validation',
+    'manual_edit',
+  ]),
   quote: z.string().nullable(),
   providedBy: UserRef.nullable(),
   /** Interview the fact came from, if any. */
@@ -149,16 +161,26 @@ export type EvidenceItem = z.infer<typeof EvidenceItem>;
 export const VersionDiff = z.object({
   from: z.object({ id: z.uuid(), versionNumber: z.number().int() }),
   to: z.object({ id: z.uuid(), versionNumber: z.number().int() }),
-  metadata: z.array(z.object({ field: z.string(), before: z.string().nullable(), after: z.string().nullable() })),
+  metadata: z.array(
+    z.object({ field: z.string(), before: z.string().nullable(), after: z.string().nullable() }),
+  ),
   steps: z.array(
     z.object({
       stepKey: z.string(),
       name: z.string(),
       change: z.enum(['added', 'removed', 'changed']),
-      fields: z.array(z.object({ field: z.string(), before: z.string().nullable(), after: z.string().nullable() })),
+      fields: z.array(
+        z.object({
+          field: z.string(),
+          before: z.string().nullable(),
+          after: z.string().nullable(),
+        }),
+      ),
     }),
   ),
-  connections: z.array(z.object({ description: z.string(), change: z.enum(['added', 'removed', 'changed']) })),
+  connections: z.array(
+    z.object({ description: z.string(), change: z.enum(['added', 'removed', 'changed']) }),
+  ),
   rules: z.array(z.object({ statement: z.string(), change: z.enum(['added', 'removed']) })),
 });
 export type VersionDiff = z.infer<typeof VersionDiff>;
@@ -166,7 +188,6 @@ export type VersionDiff = z.infer<typeof VersionDiff>;
 export { Provenance };
 
 // ---- Improvement analysis ----
-
 
 const findingBase = {
   id: z.uuid(),
@@ -221,7 +242,6 @@ export type IssueInput = z.infer<typeof IssueInput>;
 
 // ---- To-Be design ----
 
-
 export const ToBeInput = z.object({
   /** Opportunities to implement (accepted ones are suggested by default). */
   opportunityIds: z.array(z.uuid()).max(20),
@@ -240,7 +260,9 @@ export const DesignChange = z.object({
 export type DesignChange = z.infer<typeof DesignChange>;
 
 export const DesignDetail = z.object({
-  basedOn: z.object({ id: z.uuid(), versionNumber: z.number().int(), status: VersionStatus }).nullable(),
+  basedOn: z
+    .object({ id: z.uuid(), versionNumber: z.number().int(), status: VersionStatus })
+    .nullable(),
   goals: z.string().nullable(),
   summary: z.string().nullable(),
   changes: z.array(DesignChange),

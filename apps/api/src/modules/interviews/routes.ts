@@ -6,6 +6,7 @@ import {
   InterviewMessage,
   InterviewSummary,
   PostMessageInput,
+  SendBackInput,
   StartInterviewInput,
   type InterviewStreamEvent,
 } from '@process-ai/shared';
@@ -18,7 +19,7 @@ import {
 } from '@process-ai/agent';
 import { getAccessibleSession, getInterviewDetail, listInterviews } from './service.js';
 import { validationEvents } from '@process-ai/db';
-import { loadVersionContext, transition } from '../governance/service.js';
+import { GovernanceError, interviewFor, loadVersionContext, transition } from '../governance/service.js';
 
 const IdParams = z.object({ id: z.uuid() });
 
@@ -171,6 +172,38 @@ export const interviewRoutes: FastifyPluginAsyncZod<{ db: Db; llm: LlmGateway | 
     return reply.status(204).send();
   });
 
+  /**
+   * Validation found points only the interviewee can settle: return the version to draft and reopen
+   * the interview, which reads those points back to them.
+   */
+  app.post(
+    '/versions/:id/send-back',
+    { schema: { params: IdParams, body: SendBackInput, response: { 200: InterviewMessage } } },
+    async (request) => {
+      const user = app.requireUser(request);
+      const e = requireEngine();
+      let ctx;
+      try {
+        ctx = await loadVersionContext(db, user, request.params.id);
+      } catch (err) {
+        if (err instanceof GovernanceError) throw app.httpErrors.notFound(err.message);
+        throw err;
+      }
+      if (!ctx.actor.isAdmin && !ctx.actor.isOwner)
+        throw app.httpErrors.forbidden('Only the process owner or an admin can send this back');
+      const session = await interviewFor(db, ctx.version.id);
+      if (!session || session.status !== 'completed')
+        throw app.httpErrors.conflict('There is no finished interview behind this version');
+      const comment = request.body.comment?.trim() || null;
+      if (ctx.version.status === 'under_validation') {
+        await transition(db, ctx, user.id, 'return', comment ?? 'Sent back to the interviewee to confirm open points');
+      } else if (ctx.version.status !== 'draft') {
+        throw app.httpErrors.conflict('Only a draft or a version under validation can be sent back');
+      }
+      return e.reopen(session.id, comment);
+    },
+  );
+
   app.post(
     '/interviews/:id/complete',
     { schema: { params: IdParams, response: { 200: InterviewMessage } } },
@@ -182,10 +215,20 @@ export const interviewRoutes: FastifyPluginAsyncZod<{ db: Db; llm: LlmGateway | 
       // The interviewee confirmed the summary: record it and send the draft to the process owner.
       await db
         .insert(validationEvents)
-        .values({ versionId: summary.versionId, action: 'summary_confirmed', actorUserId: user.id });
+        .values({
+          versionId: summary.versionId,
+          action: 'summary_confirmed',
+          actorUserId: user.id,
+        });
       const ctx = await loadVersionContext(db, user, summary.versionId);
       if (ctx.version.status === 'draft') {
-        await transition(db, ctx, user.id, 'submit', 'Submitted after the interview summary was confirmed');
+        await transition(
+          db,
+          ctx,
+          user.id,
+          'submit',
+          'Submitted after the interview summary was confirmed',
+        );
       }
       return message;
     },

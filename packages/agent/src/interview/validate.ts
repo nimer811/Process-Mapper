@@ -1,5 +1,6 @@
 import { MAX_OPS_PER_TURN, type Op } from './ops.js';
 import type { InterviewState, ReferenceDoc } from './state.js';
+import { sameRule } from './text.js';
 
 export type StepTarget = { kind: 'existing'; id: string } | { kind: 'new'; ref: string };
 
@@ -59,6 +60,8 @@ export function validateOps(
   const removedSteps = new Set<string>();
   const edgeKeys = new Set(state.edges.map((e) => `${e.fromStepId}->${e.toStepId}`));
   const itemLabels = openItemLabels(state);
+  /** Rules already in the model plus those accepted this turn, to drop restatements. */
+  const knownRules = state.rules.map((r) => r.statement);
 
   const resolve = (ref: string | null | undefined): StepTarget | null | 'invalid' => {
     if (ref == null) return null;
@@ -87,7 +90,8 @@ export function validateOps(
         break;
       case 'add_step':
         if (!op.name.trim()) error = 'empty step name';
-        else if (newRefs.has(op.ref) || byKey.has(op.ref.toUpperCase())) error = `duplicate ref "${op.ref}"`;
+        else if (newRefs.has(op.ref) || byKey.has(op.ref.toUpperCase()))
+          error = `duplicate ref "${op.ref}"`;
         else error = need('after', op.after, false);
         if (!error) newRefs.add(op.ref);
         break;
@@ -122,6 +126,8 @@ export function validateOps(
         break;
       case 'add_rule':
         if (!op.statement.trim()) error = 'empty rule';
+        else if (knownRules.some((r) => sameRule(r, op.statement)))
+          error = 'duplicate of an existing rule';
         else if (op.provenance === 'documented' && !docsByLabel.has(op.source ?? '')) {
           error = `documented rule cites unknown reference "${op.source}"`;
         } else error = need('step', op.step, false);
@@ -135,7 +141,8 @@ export function validateOps(
         break;
       case 'raise_item':
         if (!op.description.trim()) error = 'empty description';
-        else if (op.source && !docsByLabel.has(op.source)) error = `cites unknown reference "${op.source}"`;
+        else if (op.source && !docsByLabel.has(op.source))
+          error = `cites unknown reference "${op.source}"`;
         else error = need('step', op.step, false);
         break;
       case 'set_focus':
@@ -156,12 +163,15 @@ export function validateOps(
       result.downgraded++;
     }
 
+    if (op.op === 'add_rule') knownRules.push(op.statement);
     result.accepted.push({
       ...op,
       targets,
       finalProvenance,
       ...(op.op === 'resolve_open_item' ? { openItemId: itemLabels.get(op.item) } : {}),
-      ...('source' in op && op.source && docsByLabel.has(op.source) ? { sourceChunkId: docsByLabel.get(op.source)!.chunkId } : {}),
+      ...('source' in op && op.source && docsByLabel.has(op.source)
+        ? { sourceChunkId: docsByLabel.get(op.source)!.chunkId }
+        : {}),
     });
   }
 

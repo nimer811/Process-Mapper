@@ -9,6 +9,7 @@ import {
   evidence,
   inArray,
   interviewMessages,
+  interviewSessions,
   openItems,
   processEdges,
   processes,
@@ -89,7 +90,9 @@ export async function computeBlockers(db: Db, ctx: VersionContext): Promise<Bloc
       kind: 'no_owner',
       entityType: 'process',
       entityId: ctx.process.id,
-      description: 'Assign a process owner to validate this process.',
+      description: ctx.version.ownerRole
+        ? `Assign a process owner to validate this process. The interview named "${ctx.version.ownerRole}" as accountable.`
+        : 'Assign a process owner to validate this process.',
     });
   }
   for (const s of steps) {
@@ -159,6 +162,17 @@ export async function computeBlockers(db: Db, ctx: VersionContext): Promise<Bloc
   return blockers;
 }
 
+/** The most recent interview that produced this version, if any. */
+export async function interviewFor(db: Db, versionId: string) {
+  const [session] = await db
+    .select()
+    .from(interviewSessions)
+    .where(eq(interviewSessions.versionId, versionId))
+    .orderBy(desc(interviewSessions.createdAt))
+    .limit(1);
+  return session ?? null;
+}
+
 /** One As-Is and one To-Be can be in progress at a time. */
 export async function openVersionExists(db: Db, processId: string, kind: 'as_is' | 'to_be') {
   const open = await db
@@ -197,6 +211,11 @@ export async function readiness(db: Db, ctx: VersionContext): Promise<Readiness>
       ctx.version.kind === 'as_is' &&
       !(await openVersionExists(db, ctx.process.id, 'to_be')),
     canArchive: ctx.actor.isAdmin && !ctx.process.archivedAt,
+    canSendBack:
+      !ctx.process.archivedAt &&
+      (ctx.actor.isAdmin || ctx.actor.isOwner) &&
+      (ctx.version.status === 'draft' || ctx.version.status === 'under_validation') &&
+      (await interviewFor(db, ctx.version.id))?.status === 'completed',
     blockers,
   };
 }
@@ -325,14 +344,12 @@ export async function createVersion(
       changeSummary,
       userId,
     });
-    await tx
-      .insert(validationEvents)
-      .values({
-        versionId: next.id,
-        action: 'reopened',
-        actorUserId: userId,
-        comment: changeSummary,
-      });
+    await tx.insert(validationEvents).values({
+      versionId: next.id,
+      action: 'reopened',
+      actorUserId: userId,
+      comment: changeSummary,
+    });
     return next;
   });
 }

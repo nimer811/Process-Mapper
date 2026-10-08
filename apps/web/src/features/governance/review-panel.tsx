@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { AlertTriangle, Check, CircleAlert, Trash2 } from 'lucide-react';
+import { AlertTriangle, Check, CircleAlert, MessageSquareReply, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { Blocker, Readiness, VersionGraph } from '@process-ai/shared';
 import { api, ApiError } from '@/lib/api';
@@ -46,6 +46,9 @@ export function ReviewPanel({
             canEdit={r.canEdit}
           />
         ))}
+        {r.canSendBack && blocking.some((b) => b.kind === 'inferred' || b.kind === 'disputed') && (
+          <SendBack versionId={g.id} />
+        )}
         {warnings.map((b, i) => (
           <div key={i} className="text-muted-foreground flex items-start gap-2 text-sm">
             <AlertTriangle className="mt-0.5 size-3.5 shrink-0" />
@@ -54,6 +57,53 @@ export function ReviewPanel({
         ))}
       </CardContent>
     </Card>
+  );
+}
+
+/** Sends the AI's unconfirmed points back to the interviewee, who confirms them in the interview. */
+function SendBack({ versionId }: { versionId: string }) {
+  const refresh = useRefreshProcess();
+  const [comment, setComment] = useState('');
+  const [busy, setBusy] = useState(false);
+  const send = async () => {
+    setBusy(true);
+    try {
+      await api(`/versions/${versionId}/send-back`, {
+        method: 'POST',
+        body: JSON.stringify(comment.trim() ? { comment } : {}),
+      });
+      await refresh();
+      toast.success('Sent back. The interviewee will be asked to confirm these points.');
+      setComment('');
+    } catch (e) {
+      toast.error(e instanceof ApiError ? e.problem.title : 'Could not send back');
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <form
+      className="bg-muted/40 flex flex-wrap items-center gap-2 rounded-md border border-dashed p-2.5 text-sm"
+      onSubmit={(e) => {
+        e.preventDefault();
+        void send();
+      }}
+    >
+      <span className="text-muted-foreground min-w-0 flex-1">
+        Not sure? Ask the person interviewed to confirm the AI's inferences in their interview.
+      </span>
+      <Input
+        value={comment}
+        onChange={(e) => setComment(e.target.value)}
+        placeholder="Note for them (optional)"
+        className="h-8 sm:w-56"
+        aria-label="Note for the interviewee"
+      />
+      <Button size="sm" type="submit" variant="outline" disabled={busy}>
+        <MessageSquareReply />
+        Ask the interviewee
+      </Button>
+    </form>
   );
 }
 

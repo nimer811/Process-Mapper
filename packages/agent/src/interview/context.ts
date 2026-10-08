@@ -38,7 +38,9 @@ export function renderOutline(state: InterviewState): string {
       s.painPoints.length && `pain: ${s.painPoints.join('; ')}`,
     ].filter(Boolean);
     const focus = s.id === state.session.focusStepId ? ' <- current focus' : '';
-    lines.push(`${s.stepKey} [${s.type}] ${s.name}${prov(s.provenance)}${parts.length ? ` — ${parts.join('; ')}` : ''}${focus}`);
+    lines.push(
+      `${s.stepKey} [${s.type}] ${s.name}${prov(s.provenance)}${parts.length ? ` — ${parts.join('; ')}` : ''}${focus}`,
+    );
   }
 
   lines.push('', 'Flow:');
@@ -65,7 +67,11 @@ export function renderOpenItems(state: InterviewState): string {
   const byId = new Map(state.openItems.map((i) => [i.id, i]));
   const rows = [...labels.entries()].map(([label, id]) => {
     const i = byId.get(id)!;
-    return `${label} (${i.type}${i.status === 'asked' ? ', already asked' : ''}): ${i.description}${i.citation ? ` [source: ${i.citation.label}]` : ''}`;
+    const step =
+      i.entityType === 'step' && i.entityId
+        ? state.steps.find((st) => st.id === i.entityId)?.stepKey
+        : null;
+    return `${label} (${i.type}${step ? `, about ${step}` : ''}${i.status === 'asked' ? ', already asked' : ''}): ${i.description}${i.citation ? ` [source: ${i.citation.label}]` : ''}`;
   });
   return rows.length ? rows.join('\n') : '(none)';
 }
@@ -84,8 +90,10 @@ const KIND_HINT: Record<string, string> = {
   needs_detail: 'needs more detail — ask them to elaborate',
   inconsistency: 'conflicts with something said earlier — point out both and ask which is right',
   implausible: 'seems incomplete or unusual — ask gently how it works',
-  sop_gap: 'the documents describe something they have not mentioned — ask if it happens in practice',
-  practice_gap: 'something processes like this usually include — ask neutrally whether it happens here',
+  sop_gap:
+    'the documents describe something they have not mentioned — ask if it happens in practice',
+  practice_gap:
+    'something processes like this usually include — ask neutrally whether it happens here',
 };
 
 export function describeQuestions(items: OpenItemState[]) {
@@ -95,6 +103,8 @@ export function describeQuestions(items: OpenItemState[]) {
       const note =
         i.type === 'contradiction'
           ? ' (contradiction — name the source and ask which reflects what happens today)'
+          : i.field === 'confirm'
+            ? ' (read-back — combine all of these into ONE short question that plays them back in order, e.g. "So after X it goes to Y, then Z — is that right?")'
           : i.source === 'analyst' && i.field && KIND_HINT[i.field]
             ? ` (${KIND_HINT[i.field]})`
             : '';

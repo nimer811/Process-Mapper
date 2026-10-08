@@ -1,5 +1,11 @@
 import { HashEmbedder } from '@process-ai/knowledge';
-import type { LlmCallRecord, LlmGateway, LlmPurpose, ObjectRequest, TextRequest } from './gateway.js';
+import type {
+  LlmCallRecord,
+  LlmGateway,
+  LlmPurpose,
+  ObjectRequest,
+  TextRequest,
+} from './gateway.js';
 
 type Handler = (req: { system: string; prompt: string }) => unknown;
 
@@ -43,11 +49,29 @@ export class MockGateway implements LlmGateway {
   }
 
   private record(purpose: LlmPurpose): LlmCallRecord {
-    return { purpose, provider: 'mock', model: 'mock', inputTokens: 0, outputTokens: 0, latencyMs: 0, status: 'ok', error: null };
+    return {
+      purpose,
+      provider: 'mock',
+      model: 'mock',
+      inputTokens: 0,
+      outputTokens: 0,
+      latencyMs: 0,
+      status: 'ok',
+      error: null,
+    };
   }
 
   async generateObject<T>(req: ObjectRequest<T>, onCall?: (r: LlmCallRecord) => void): Promise<T> {
-    const value = this.next(req.purpose, req);
+    let value = this.next(req.purpose, req);
+    // Extraction fixtures that don't classify the message are about the process.
+    if (
+      req.purpose === 'extract' &&
+      value &&
+      typeof value === 'object' &&
+      !('message_type' in value)
+    ) {
+      value = { message_type: 'process_info', ...value };
+    }
     onCall?.(this.record(req.purpose));
     return req.schema.parse(value);
   }
