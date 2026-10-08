@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link, NavLink, useParams } from 'react-router';
 import {
   CheckCircle2,
@@ -7,6 +8,7 @@ import {
   TriangleAlert,
 } from 'lucide-react';
 import type { InterviewDetail } from '@process-ai/shared';
+import { useAuth } from '@/auth/auth';
 import { cn } from '@/lib/utils';
 import { formatDate } from '@/lib/format';
 import { useMediaQuery } from '@/lib/use-media-query';
@@ -65,7 +67,11 @@ export function ChatPage() {
 }
 
 function ConversationList({ activeId, className }: { activeId?: string; className?: string }) {
-  const interviews = useInterviews();
+  const { user } = useAuth();
+  const isAdmin = !!user?.roles.includes('admin');
+  // Admins see everyone's conversations (read-only unless it's their own).
+  const [everyone, setEveryone] = useState(true);
+  const interviews = useInterviews(isAdmin && everyone);
   return (
     <aside className={cn('flex min-h-0 flex-col', className)}>
       <div className="p-3">
@@ -78,6 +84,26 @@ function ConversationList({ activeId, className }: { activeId?: string; classNam
             </Button>
           }
         />
+        {isAdmin && (
+          <div className="bg-muted mt-2 grid grid-cols-2 gap-1 rounded-md p-1 text-xs font-medium">
+            {[
+              [true, 'Everyone'],
+              [false, 'Mine'],
+            ].map(([value, label]) => (
+              <button
+                key={String(value)}
+                type="button"
+                onClick={() => setEveryone(value as boolean)}
+                className={cn(
+                  'rounded px-2 py-1',
+                  everyone === value ? 'bg-background shadow-sm' : 'text-muted-foreground',
+                )}
+              >
+                {label as string}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
       <nav className="min-h-0 flex-1 overflow-y-auto px-2 pb-3">
         {interviews.isPending && <Skeleton className="mx-1 h-14" />}
@@ -91,6 +117,9 @@ function ConversationList({ activeId, className }: { activeId?: string; classNam
             )}
           >
             <div className="truncate text-sm font-medium">{i.processName}</div>
+            {i.user.id !== user?.id && (
+              <div className="text-muted-foreground truncate text-xs">{i.user.displayName}</div>
+            )}
             <div className="text-muted-foreground flex justify-between gap-2 text-xs">
               <span className="truncate">
                 {i.status === 'paused' ? 'Paused' : stageLabel[i.stage]}

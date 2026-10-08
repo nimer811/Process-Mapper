@@ -27,7 +27,8 @@ Move resolved notes to `docs/notes/` or `docs/decisions/` once they are settled.
 - Quality: duplicate rules dropped (same words and same figures), non-rules not saved as rules, role answers update the step they were about, analyst asks about timings/SLAs.
 - AI inferences (steps, connections, rules) are read back to the employee as one question on playback turns and before the summary; a "yes" makes them stated, with evidence. Confirming the summary also confirms what it showed.
 - Validation: "Ask the interviewee" on the review panel returns the version to draft and reopens the interview with the read-back (`POST /versions/:id/send-back`). The owner blocker shows the role the interview named as accountable.
-- Open: not committed. `pnpm format` reformatted ~80 files repo-wide; decide whether to revert the unrelated ones or keep as a separate format commit. Docker rebuild blocked (Docker Desktop can't reach Docker Hub); new code tested via `pnpm dev` (http://localhost:5173).
+- Phase A (roadmap) done: reformat committed separately (a38f608, revertable), work committed and pushed, Docker rebuilt, admins see everyone's chats (Everyone / Mine toggle in /chat).
+- Open: `pnpm-lock 2.yaml` is a stray tracked duplicate of the lockfile — delete it from git? Next: Phase B (inbox and notifications) — needs decision 1 in `docs/briefs/draft-process-ai-roadmap.md`.
 
 ## 2026-10-08 — Analyst interviewer (step 1 of the engine upgrade)
 
