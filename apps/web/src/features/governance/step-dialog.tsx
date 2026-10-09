@@ -86,6 +86,9 @@ function StepForm({
     expectedDuration: step?.expectedDuration ?? '',
     sla: step?.sla ?? '',
     approvalAuthority: step?.approvalAuthority ?? '',
+    accountableRole: step?.accountableRole ?? '',
+    consultedRoles: step?.consultedRoles.join(', ') ?? '',
+    informedRoles: step?.informedRoles.join(', ') ?? '',
     afterStepId: NONE,
   });
   const [busy, setBusy] = useState(false);
@@ -106,6 +109,9 @@ function StepForm({
       expectedDuration: f.expectedDuration.trim() || null,
       sla: f.sla.trim() || null,
       approvalAuthority: f.approvalAuthority.trim() || null,
+      accountableRole: f.accountableRole.trim() || null,
+      consultedRoles: split(f.consultedRoles),
+      informedRoles: split(f.informedRoles),
       ...(step ? {} : { afterStepId: f.afterStepId === NONE ? null : f.afterStepId }),
     };
     setBusy(true);
@@ -175,7 +181,10 @@ function StepForm({
             </SelectContent>
           </Select>
         </div>
-        {text('actor', 'Owner (role or team)', 'e.g. Procurement Officer')}
+        {text('actor', 'Responsible (role that does it)', 'e.g. Procurement Officer')}
+        {text('accountableRole', 'Accountable (one role)', 'e.g. Procurement Manager')}
+        {text('consultedRoles', 'Consulted (comma-separated)')}
+        {text('informedRoles', 'Informed (comma-separated)')}
         {text('systems', 'Systems (comma-separated)', 'e.g. SAP S/4HANA')}
         {text('inputs', 'Inputs (comma-separated)')}
         {text('outputs', 'Outputs (comma-separated)')}

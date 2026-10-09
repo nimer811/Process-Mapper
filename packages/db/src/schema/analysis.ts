@@ -1,4 +1,5 @@
-import { index, pgEnum, pgTable, text, timestamp, unique, uuid } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
+import { boolean, index, pgEnum, pgTable, text, timestamp, unique, uuid } from 'drizzle-orm/pg-core';
 import {
   designChangeTypes,
   findingSources,
@@ -6,9 +7,10 @@ import {
   issueCategories,
   levels,
   opportunityKinds,
+  practiceCategories,
 } from '@process-ai/shared';
 import { id, timestamps } from './columns.js';
-import { users } from './identity.js';
+import { departments, users } from './identity.js';
 import { processSteps, processVersions } from './process.js';
 
 export const issueCategory = pgEnum('issue_category', issueCategories);
@@ -16,6 +18,7 @@ export const opportunityKind = pgEnum('opportunity_kind', opportunityKinds);
 export const level = pgEnum('level', levels);
 export const findingSource = pgEnum('finding_source', findingSources);
 export const findingStatus = pgEnum('finding_status', findingStatuses);
+export const practiceCategory = pgEnum('practice_category', practiceCategories);
 
 const findingColumns = {
   id: id(),
@@ -75,7 +78,25 @@ export const designChanges = pgTable(
     description: text().notNull(),
     rationale: text().notNull(),
     opportunityId: uuid().references(() => automationOpportunities.id, { onDelete: 'set null' }),
-    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    /** Knowledge-base passages and best practices the change relies on. */
+    sources: text().array().notNull().default([]),
+    // Wall-clock time (not the transaction start) so changes made in one design keep their order.
+    createdAt: timestamp({ withTimezone: true })
+      .notNull()
+      .default(sql`clock_timestamp()`),
   },
   (t) => [index().on(t.versionId)],
 );
+
+/** Organisation-wide good practices (admin-editable) used by the To-Be designer and the checks. */
+export const bestPractices = pgTable('best_practices', {
+  id: id(),
+  title: text().notNull(),
+  statement: text().notNull(),
+  category: practiceCategory().notNull(),
+  keywords: text().array().notNull().default([]),
+  departmentId: uuid().references(() => departments.id, { onDelete: 'cascade' }),
+  source: text(),
+  isActive: boolean().notNull().default(true),
+  ...timestamps,
+});

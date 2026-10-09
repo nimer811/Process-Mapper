@@ -13,6 +13,11 @@ const Why = {
     .string()
     .nullable()
     .describe('Opportunity label such as "O2", or null if it serves a stated goal'),
+  sources: z
+    .array(z.string())
+    .describe(
+      'Labels of reference documents ("D1") or best practices ("BP2") this relies on; [] if none',
+    ),
 };
 const execution = z.enum(['manual', 'automated', 'semi_automated', 'unknown']);
 const stepType = z.enum(['task', 'decision', 'approval', 'end']);
@@ -76,11 +81,38 @@ export const DesignOp = z.union([
 ]);
 export type DesignOp = z.infer<typeof DesignOp>;
 
+/** Who owns the To-Be process and each of its steps (RACI). */
+export const OwnershipDesign = z.object({
+  process_owner: z.object({
+    role: z.string().describe('The one accountable owner role for the whole process'),
+    rationale: z.string(),
+    sources: z.array(z.string()),
+  }),
+  raci: z
+    .array(
+      z.object({
+        step: Ref,
+        responsible: z
+          .string()
+          .nullable()
+          .describe('Role that does the step (null keeps the current one)'),
+        accountable: z.string().describe('Exactly one role that answers for the step'),
+        consulted: z.array(z.string()),
+        informed: z.array(z.string()),
+        rationale: z.string(),
+        sources: z.array(z.string()),
+      }),
+    )
+    .max(40),
+});
+export type OwnershipDesign = z.infer<typeof OwnershipDesign>;
+
 export const DesignResult = z.object({
   summary: z
     .string()
     .describe('3–5 sentences: what the future process looks like and what changed overall'),
   expected_benefits: z.array(z.string()).max(6),
   changes: z.array(DesignOp).max(25),
+  ownership: OwnershipDesign,
 });
 export type DesignResult = z.infer<typeof DesignResult>;

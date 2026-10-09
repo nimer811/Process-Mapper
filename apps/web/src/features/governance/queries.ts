@@ -62,6 +62,7 @@ export function useRefreshProcess() {
         'findings',
         'controls',
         'sop',
+        'ownership',
         'tasks',
         'contributors',
         'disagreements',

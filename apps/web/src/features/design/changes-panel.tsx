@@ -1,4 +1,4 @@
-import { Link2, Minus, Pencil, Plus, ScrollText } from 'lucide-react';
+import { Link2, Minus, Pencil, Plus, ScrollText, Users } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import type { DesignChange, DesignDetail, VersionGraph } from '@process-ai/shared';
 import { api } from '@/lib/api';
@@ -31,6 +31,7 @@ const changeMeta: Record<
     tone: 'text-emerald-700 dark:text-emerald-400',
   },
   rule_removed: { icon: ScrollText, label: 'Rule removed', tone: 'text-red-700 dark:text-red-400' },
+  ownership: { icon: Users, label: 'Ownership', tone: 'text-violet-700 dark:text-violet-400' },
 };
 
 /** Highlights per step id for one side of the comparison. */
@@ -101,6 +102,11 @@ export function ChangesPanel({
                       {c.description}
                     </div>
                     <p className="text-muted-foreground ml-5">{c.rationale}</p>
+                    {c.sources.length > 0 && (
+                      <p className="text-muted-foreground ml-5 text-xs">
+                        Based on: {c.sources.join('; ')}
+                      </p>
+                    )}
                     {c.opportunity && (
                       <Badge variant="outline" className="mt-1 ml-5">
                         Implements: {c.opportunity.title}

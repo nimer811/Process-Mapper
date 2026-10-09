@@ -147,6 +147,9 @@ export const processSteps = pgTable(
     expectedDuration: text(),
     sla: text(),
     approvalAuthority: text(),
+    accountableRole: text(),
+    consultedRoles: text().array().notNull().default([]),
+    informedRoles: text().array().notNull().default([]),
     painPoints: text().array().notNull().default([]),
     /** Interviewee said there is no system for this step (so don't keep asking). */
     noSystem: boolean().notNull().default(false),

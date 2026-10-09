@@ -162,6 +162,10 @@ export const ProcessStep = z.object({
   expectedDuration: z.string().nullable(),
   sla: z.string().nullable(),
   approvalAuthority: z.string().nullable(),
+  /** RACI beyond the doer (actor = Responsible): who is Accountable, Consulted, Informed. */
+  accountableRole: z.string().nullable(),
+  consultedRoles: z.array(z.string()),
+  informedRoles: z.array(z.string()),
   painPoints: z.array(z.string()),
   dependsOn: z.array(z.uuid()),
   provenance: Provenance,
@@ -335,6 +339,7 @@ export const designChangeTypes = [
   'reconnected',
   'rule_added',
   'rule_removed',
+  'ownership',
 ] as const;
 export const DesignChangeType = z.enum(designChangeTypes);
 export type DesignChangeType = z.infer<typeof DesignChangeType>;

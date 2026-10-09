@@ -32,6 +32,7 @@ import { ReviewPanel } from '@/features/governance/review-panel';
 import { ContributorsCard } from '@/features/contributions/contributors-card';
 import { ControlsPanel } from '@/features/controls/controls-panel';
 import { SopPanel } from '@/features/sop/sop-panel';
+import { OwnershipPanel } from '@/features/ownership/ownership-panel';
 import { StepDialog } from '@/features/governance/step-dialog';
 import { ConnectionsEditor, RulesEditor } from '@/features/governance/structure-editors';
 import { MetadataDialog } from '@/features/governance/metadata-dialog';
@@ -131,6 +132,7 @@ export function ProcessPage() {
           {g.kind === 'to_be' && <TabsTrigger value="changes">As-Is vs To-Be</TabsTrigger>}
           <TabsTrigger value="map">Process map</TabsTrigger>
           <TabsTrigger value="details">Details</TabsTrigger>
+          <TabsTrigger value="ownership">Ownership</TabsTrigger>
           <TabsTrigger value="controls">Controls</TabsTrigger>
           {g.kind === 'as_is' && <TabsTrigger value="sop">SOP</TabsTrigger>}
           <TabsTrigger value="issues">Issues</TabsTrigger>
@@ -184,6 +186,9 @@ export function ProcessPage() {
           )}
         </TabsContent>
 
+        <TabsContent value="ownership">
+          <OwnershipPanel graph={g} />
+        </TabsContent>
         <TabsContent value="controls">
           <ControlsPanel graph={g} readiness={r} />
         </TabsContent>

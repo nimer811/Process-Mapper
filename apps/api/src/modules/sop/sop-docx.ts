@@ -157,26 +157,30 @@ export async function buildSopDocx(input: SopInput): Promise<Buffer> {
       : [];
   const roles = [...new Set(work.flatMap((s) => (s.actor ? [s.actor.name] : [])))];
 
-  // 6. RACI: R = who does it; A = the approver if the map has one, else the process owner role.
+  // 6. RACI: R = who does it; A = the accountable role (else the approver, else the process owner).
   const owner = g.ownerRole ?? p.owner?.displayName ?? 'Process owner';
+  const accountableOf = (s: (typeof work)[number]) =>
+    s.accountableRole ?? s.approvalAuthority ?? owner;
   const raciRoles = [
     ...new Set([
       ...roles,
-      ...work.flatMap((s) => (s.approvalAuthority ? [s.approvalAuthority] : [])),
-      owner,
+      ...work.map(accountableOf),
+      ...work.flatMap((s) => [...s.consultedRoles, ...s.informedRoles]),
     ]),
   ];
-  const raciRows = work.map((s) => {
-    const accountable = s.approvalAuthority ?? owner;
-    return [
-      `${s.stepKey} ${s.name}`,
-      ...raciRoles.map((r) => {
-        const isR = s.actor?.name === r;
-        const isA = accountable === r;
-        return isR && isA ? 'A/R' : isR ? 'R' : isA ? 'A' : '';
-      }),
-    ];
-  });
+  const raciRows = work.map((s) => [
+    `${s.stepKey} ${s.name}`,
+    ...raciRoles.map((r) => {
+      const codes = [
+        accountableOf(s) === r && 'A',
+        s.actor?.name === r && 'R',
+        s.consultedRoles.includes(r) && 'C',
+        s.informedRoles.includes(r) && 'I',
+      ].filter(Boolean);
+      return codes.join('/');
+    }),
+  ]);
+  const raciHasCi = work.some((s) => s.consultedRoles.length || s.informedRoles.length);
 
   const diagramWidth = 620;
   const scale = diagramWidth / Math.max(1, input.diagram.width);
@@ -293,7 +297,11 @@ export async function buildSopDocx(input: SopInput): Promise<Buffer> {
 
     heading('6. RACI matrix'),
     table(['Activity', ...raciRoles], raciRows),
-    muted('R = responsible, A = accountable. Consulted and informed roles are not captured yet.'),
+    muted(
+      raciHasCi
+        ? 'R = responsible, A = accountable, C = consulted, I = informed.'
+        : 'R = responsible, A = accountable. Consulted and informed roles are not captured yet.',
+    ),
 
     heading('7. Process overview'),
     new Paragraph({

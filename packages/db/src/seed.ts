@@ -1,7 +1,9 @@
-import { departments, users } from './schema/index.js';
+import { count } from 'drizzle-orm';
+import { bestPractices, departments, users } from './schema/index.js';
+import { DEFAULT_BEST_PRACTICES } from './best-practices-seed.js';
 import type { Db } from './client.js';
 
-/** Idempotent seed: pilot department and dev users. Safe to run repeatedly. */
+/** Idempotent seed: pilot department, dev users and the starter best-practice library. Safe to run repeatedly. */
 export async function seed(db: Db) {
   await db
     .insert(departments)
@@ -37,4 +39,12 @@ export async function seed(db: Db) {
       },
     ])
     .onConflictDoNothing({ target: users.email });
+  await seedBestPractices(db);
+}
+
+/** Adds the starter best-practice library once (never overwrites an admin's edits). */
+export async function seedBestPractices(db: Db) {
+  const [{ n } = { n: 0 }] = await db.select({ n: count() }).from(bestPractices);
+  if (n > 0) return;
+  await db.insert(bestPractices).values(DEFAULT_BEST_PRACTICES);
 }

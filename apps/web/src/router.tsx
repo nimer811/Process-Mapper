@@ -14,6 +14,7 @@ import { InterviewPage } from '@/pages/interview-page';
 import { ChatPage } from '@/pages/chat-page';
 import { KnowledgeBasePage, KnowledgePage } from '@/pages/knowledge-page';
 import { ApprovalsPage } from '@/pages/admin/approvals-page';
+import { BestPracticesPage } from '@/pages/admin/best-practices-page';
 
 export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
@@ -42,6 +43,7 @@ export const router = createBrowserRouter([
               { path: 'admin/departments', element: <DepartmentsAdminPage /> },
               { path: 'admin/interviews', element: <InterviewsPage all /> },
               { path: 'admin/approvals', element: <ApprovalsPage /> },
+              { path: 'admin/best-practices', element: <BestPracticesPage /> },
               { path: 'admin/knowledge', element: <KnowledgePage admin /> },
               { path: 'admin/knowledge/:knowledgeBaseId', element: <KnowledgeBasePage admin /> },
             ],

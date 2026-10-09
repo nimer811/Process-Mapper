@@ -23,3 +23,4 @@ export { applyDesign, type AppliedDesign } from './design/apply.js';
 export { DesignResult, type DesignOp } from './design/ops.js';
 export { suggestControls } from './controls/suggest.js';
 export { draftSopWording, plainSopWording } from './sop/wording.js';
+export { ownershipView, relevantPractices, runOwnershipChecks } from './ownership/checks.js';

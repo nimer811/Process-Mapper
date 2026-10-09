@@ -3,6 +3,7 @@ import {
   BookOpen,
   Building2,
   ClipboardCheck,
+  Lightbulb,
   MessagesSquare,
   ScrollText,
   Users,
@@ -41,6 +42,12 @@ const sections: {
     description: 'Approve validated processes; assign owners.',
     icon: ClipboardCheck,
     to: '/admin/approvals',
+  },
+  {
+    title: 'Best practices',
+    description: 'Practices the AI applies in To-Be designs and checks.',
+    icon: Lightbulb,
+    to: '/admin/best-practices',
   },
   {
     title: 'Users and owners',

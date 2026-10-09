@@ -97,7 +97,14 @@ function StepDetails({
       <ScrollArea className="min-h-0 flex-1">
         <div className="space-y-5 p-4">
           <dl className="grid grid-cols-[8rem_1fr] gap-x-3 gap-y-2.5 text-sm">
-            <Field label="Owner">{step.actor?.name}</Field>
+            <Field label="Responsible">{step.actor?.name}</Field>
+            <Field label="Accountable">{step.accountableRole ?? step.approvalAuthority}</Field>
+            {step.consultedRoles.length > 0 && (
+              <Field label="Consulted">{step.consultedRoles.join(', ')}</Field>
+            )}
+            {step.informedRoles.length > 0 && (
+              <Field label="Informed">{step.informedRoles.join(', ')}</Field>
+            )}
             <Field label="System">{step.systems.map((s) => s.name).join(', ')}</Field>
             <Field label="Input">{list(step.inputs)}</Field>
             <Field label="Output">{list(step.outputs)}</Field>

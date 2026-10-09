@@ -13,7 +13,7 @@ import {
   type Db,
 } from '@process-ai/db';
 import type { DesignChangeType } from '@process-ai/shared';
-import type { DesignOp } from './ops.js';
+import type { DesignOp, OwnershipDesign } from './ops.js';
 
 export interface AppliedDesign {
   applied: number;
@@ -27,8 +27,15 @@ export interface AppliedDesign {
  */
 export async function applyDesign(
   tx: Db,
-  ctx: { versionId: string; departmentId: string; opportunityIds: Map<string, string> },
+  ctx: {
+    versionId: string;
+    departmentId: string;
+    opportunityIds: Map<string, string>;
+    /** Source labels given to the designer (D1, BP2) → what to show (document citation, practice title). */
+    sourceLabels?: Map<string, string>;
+  },
   ops: DesignOp[],
+  ownership?: OwnershipDesign,
 ): Promise<AppliedDesign> {
   const result: AppliedDesign = { applied: 0, skipped: [] };
   const steps = await tx
@@ -54,8 +61,16 @@ export async function applyDesign(
   };
   const keyOf = (id: string) => byId.get(id)?.stepKey ?? '?';
   const nameOf = (id: string) => byId.get(id)?.name ?? 'step';
+  // Only sources the designer was actually given are kept.
+  const sourcesOf = (labels: string[] | undefined) => [
+    ...new Set(
+      (labels ?? []).flatMap((l) =>
+        ctx.sourceLabels?.has(l.trim()) ? [ctx.sourceLabels.get(l.trim())!] : [],
+      ),
+    ),
+  ];
   const log = async (
-    op: DesignOp,
+    op: { rationale: string; opportunity?: string | null; sources?: string[] },
     changeType: DesignChangeType,
     stepKey: string | null,
     description: string,
@@ -67,6 +82,7 @@ export async function applyDesign(
       description,
       rationale: op.rationale,
       opportunityId: op.opportunity ? (ctx.opportunityIds.get(op.opportunity) ?? null) : null,
+      sources: sourcesOf(op.sources),
     });
     result.applied++;
   };
@@ -358,6 +374,45 @@ export async function applyDesign(
         await log(op, 'rule_removed', null, `Removed rule: ${rule.statement}`);
         break;
       }
+    }
+  }
+  if (ownership) {
+    // The accountable process owner for the To-Be.
+    const ownerRole = ownership.process_owner.role.trim();
+    if (ownerRole) {
+      await tx
+        .update(processVersions)
+        .set({ ownerRole })
+        .where(eq(processVersions.id, ctx.versionId));
+      await log(ownership.process_owner, 'ownership', null, `Process owner: ${ownerRole}`);
+    }
+    // RACI per step: R (who does it), A (one role answering for it), C, I. AI-designed, so inferred.
+    for (const row of ownership.raci) {
+      const id = resolve(row.step);
+      const s = id ? byId.get(id) : null;
+      if (!id || !s || s.type === 'start' || s.type === 'end') {
+        result.skipped.push({ op: 'raci', reason: `unknown or non-work step ${row.step}` });
+        continue;
+      }
+      const set: Partial<typeof processSteps.$inferInsert> = {
+        accountableRole: row.accountable.trim() || null,
+        consultedRoles: [...new Set(row.consulted.map((r) => r.trim()).filter(Boolean))],
+        informedRoles: [...new Set(row.informed.map((r) => r.trim()).filter(Boolean))],
+        provenance: 'inferred',
+      };
+      if (row.responsible?.trim())
+        set.actorId = await upsertActor(tx, row.responsible.trim(), {
+          departmentId: ctx.departmentId,
+        });
+      await tx.update(processSteps).set(set).where(eq(processSteps.id, id));
+      await inferredEvidence('step', id);
+      const parts = [
+        row.responsible?.trim() && `R ${row.responsible.trim()}`,
+        `A ${row.accountable.trim()}`,
+        set.consultedRoles!.length && `C ${set.consultedRoles!.join(', ')}`,
+        set.informedRoles!.length && `I ${set.informedRoles!.join(', ')}`,
+      ].filter(Boolean);
+      await log(row, 'ownership', keyOf(id), `${nameOf(id)}: ${parts.join(' · ')}`);
     }
   }
   await tx

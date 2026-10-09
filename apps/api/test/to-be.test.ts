@@ -79,6 +79,7 @@ describe('To-Be design', () => {
           before: null,
           rationale: 'Catch missing documents at submission.',
           opportunity: 'O1',
+          sources: [],
         },
         {
           op: 'modify_step',
@@ -94,9 +95,37 @@ describe('To-Be design', () => {
           approval_authority: null,
           rationale: 'Track call-backs in a workflow.',
           opportunity: null,
+          sources: ['BP1', 'D9'],
         },
-        { op: 'remove_step', step: 'S99', rationale: 'Nonsense', opportunity: null },
+        { op: 'remove_step', step: 'S99', rationale: 'Nonsense', opportunity: null, sources: [] },
       ],
+      ownership: {
+        process_owner: {
+          role: 'Head of Procurement',
+          rationale: 'Senior enough to change supplier onboarding end to end.',
+          sources: ['BP1'],
+        },
+        raci: [
+          {
+            step: 'S13',
+            responsible: null,
+            accountable: 'Accounts Payable Manager',
+            consulted: ['Treasury'],
+            informed: [],
+            rationale: 'Bank verification is a finance control.',
+            sources: [],
+          },
+          {
+            step: 'S99',
+            responsible: null,
+            accountable: 'X',
+            consulted: [],
+            informed: [],
+            rationale: 'x',
+            sources: [],
+          },
+        ],
+      },
     });
     const res = await req('POST', `/versions/${vendor.versionId}/to-be`, OWNER, {
       opportunityIds: [opportunityId],
@@ -109,7 +138,7 @@ describe('To-Be design', () => {
       applied: number;
       skipped: number;
     }>();
-    expect(created).toMatchObject({ versionNumber: 1, applied: 2, skipped: 1 });
+    expect(created).toMatchObject({ versionNumber: 1, applied: 4, skipped: 2 });
     toBeId = created.id;
 
     const toBe = await graph(toBeId);
@@ -125,7 +154,10 @@ describe('To-Be design', () => {
     expect(toBe.steps.find((s) => s.stepKey === 'S13')).toMatchObject({
       execution: 'semi_automated',
       provenance: 'inferred',
+      accountableRole: 'Accounts Payable Manager',
+      consultedRoles: ['Treasury'],
     });
+    expect(toBe.ownerRole).toBe('Head of Procurement');
 
     // As-Is untouched and still current.
     expect(await graph(vendor.versionId)).toEqual(asIsBefore);
@@ -141,7 +173,16 @@ describe('To-Be design', () => {
     expect(d.changes.map((c) => [c.changeType, c.stepKey])).toEqual([
       ['added', 'S16'],
       ['modified', 'S13'],
+      ['ownership', null],
+      ['ownership', 'S13'],
     ]);
+    // Sources the designer was given are named; made-up labels (D9) are dropped.
+    expect(d.changes[1]!.sources).toHaveLength(1);
+    expect(d.changes[1]!.sources[0]).toMatch(/^Best practice: /);
+    expect(d.changes[2]!.description).toBe('Process owner: Head of Procurement');
+    expect(d.changes[3]!.description).toMatch(/A Accounts Payable Manager · C Treasury/);
+    const designPrompt = llm.calls.find((c) => c.purpose === 'design')!.prompt;
+    expect(designPrompt).toMatch(/BEST PRACTICES\nBP1: /);
     expect(d.changes[0]!.opportunity?.id).toBe(opportunityId);
     expect(d.changes[1]!.description).toMatch(/execution → semi automated; SLA → 1 business day/);
     expect((await req('GET', `/versions/${vendor.versionId}/design`, OWNER)).statusCode).toBe(404);

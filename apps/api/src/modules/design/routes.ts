@@ -1,6 +1,8 @@
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
-import { applyDesign, designToBe, type LlmGateway } from '@process-ai/agent';
+import { applyDesign, designToBe, relevantPractices, type LlmGateway } from '@process-ai/agent';
+import { citationLabel, searchKnowledge } from '@process-ai/knowledge';
+import { listPractices } from '../practices/routes.js';
 import {
   and,
   asc,
@@ -83,6 +85,29 @@ export const designRoutes: FastifyPluginAsyncZod<{ db: Db; llm: LlmGateway | nul
 
       const labelled = opps.map((o, i) => ({ label: `O${i + 1}`, o }));
       const keyOf = new Map(asIs.steps.map((s) => [s.id, s.stepKey]));
+      // Grounding: the good practices that apply, and the department's documents on approvals and roles.
+      const practices = relevantPractices(
+        await listPractices(db),
+        asIs,
+        process.name,
+        ctx.process.departmentId,
+      ).map((p, i) => ({ label: `BP${i + 1}`, title: p.title, statement: p.statement }));
+      let references: { label: string; citation: string; content: string }[] = [];
+      try {
+        references = (
+          await searchKnowledge(db, llm, {
+            query: `${process.name} delegation of authority approval limits roles responsibilities segregation of duties`,
+            departmentId: ctx.process.departmentId,
+            limit: 5,
+          })
+        ).map((r, i) => ({ label: `D${i + 1}`, citation: citationLabel(r), content: r.content }));
+      } catch (err) {
+        request.log.warn({ err }, 'Knowledge search failed for the To-Be design');
+      }
+      const sourceLabels = new Map([
+        ...practices.map((p) => [p.label, `Best practice: ${p.title}`] as const),
+        ...references.map((d) => [d.label, d.citation] as const),
+      ]);
       let design;
       try {
         design = await designToBe(
@@ -98,6 +123,8 @@ export const designRoutes: FastifyPluginAsyncZod<{ db: Db; llm: LlmGateway | nul
               stepKey: o.stepId ? (keyOf.get(o.stepId) ?? null) : null,
               expectedBenefit: o.expectedBenefit,
             })),
+            practices,
+            references,
           },
           (r) =>
             void db
@@ -133,8 +160,10 @@ export const designRoutes: FastifyPluginAsyncZod<{ db: Db; llm: LlmGateway | nul
             versionId: version.id,
             departmentId: ctx.process.departmentId,
             opportunityIds: new Map(labelled.map(({ label, o }) => [label, o.id])),
+            sourceLabels,
           },
           design.changes,
+          design.ownership,
         );
         await tx
           .update(processVersions)
@@ -216,6 +245,7 @@ export const designRoutes: FastifyPluginAsyncZod<{ db: Db; llm: LlmGateway | nul
           stepKey: c.stepKey,
           description: c.description,
           rationale: c.rationale,
+          sources: c.sources,
           opportunity: opp?.id ? opp : null,
         })),
       };

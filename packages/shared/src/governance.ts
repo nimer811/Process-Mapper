@@ -107,6 +107,9 @@ export const StepInput = z.object({
   expectedDuration: z.string().trim().max(100).nullable().optional(),
   sla: z.string().trim().max(100).nullable().optional(),
   approvalAuthority: z.string().trim().max(300).nullable().optional(),
+  accountableRole: z.string().trim().max(120).nullable().optional(),
+  consultedRoles: list.optional(),
+  informedRoles: list.optional(),
   painPoints: list.optional(),
   /** When adding: connect from this existing step. */
   afterStepId: z.uuid().nullable().optional(),
@@ -260,6 +263,8 @@ export const DesignChange = z.object({
   description: z.string(),
   rationale: z.string(),
   opportunity: z.object({ id: z.uuid(), title: z.string() }).nullable(),
+  /** Knowledge-base passages and best practices the change relies on. */
+  sources: z.array(z.string()),
 });
 export type DesignChange = z.infer<typeof DesignChange>;
 
