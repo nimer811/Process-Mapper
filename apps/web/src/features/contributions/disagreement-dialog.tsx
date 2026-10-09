@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Check, MessageSquareReply, Sparkles } from 'lucide-react';
+import { Check, Combine, MessageSquareReply, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import type { Disagreement } from '@process-ai/shared';
 import { api, ApiError } from '@/lib/api';
+import { useAuth } from '@/auth/auth';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import {
@@ -36,9 +37,17 @@ export function DisagreementDialog({
 }) {
   const list = useDisagreements(versionId);
   const refresh = useRefreshProcess();
+  const { user, hasRole } = useAuth();
   const [note, setNote] = useState('');
+  const [combined, setCombined] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const d = list.data?.find((x) => x.id === disagreementId);
+  // Nobody settles a difference they are part of; an admin does.
+  const isParty =
+    !!d &&
+    !hasRole('admin') &&
+    (d.current.user?.id === user?.id || d.proposed.user?.id === user?.id);
+  const canDecide = d?.status === 'open' && !isParty;
 
   const call = async (path: string, body: unknown, ok: string, close = true) => {
     setBusy(true);
@@ -56,8 +65,8 @@ export function DisagreementDialog({
       setBusy(false);
     }
   };
-  const resolve = (decision: 'keep' | 'accept') =>
-    call('resolve', { decision, ...(note.trim() ? { note } : {}) }, 'Settled');
+  const resolve = (decision: 'keep' | 'accept' | 'combine', value?: string) =>
+    call('resolve', { decision, value, ...(note.trim() ? { note } : {}) }, 'Settled');
   const ask = (side: 'current' | 'proposed', name: string) =>
     call('ask', { side }, `Question sent to ${name}`);
 
@@ -100,7 +109,7 @@ export function DisagreementDialog({
                         "{s.quote}"
                       </blockquote>
                     )}
-                    {d.status === 'open' && (
+                    {canDecide && (
                       <div className="mt-auto flex flex-wrap gap-2 pt-1">
                         <Button
                           size="sm"
@@ -145,17 +154,11 @@ export function DisagreementDialog({
                       Based on: {rec.sources.join('; ')}
                     </p>
                   )}
-                  {rec.choice === 'both' && (
-                    <p className="text-muted-foreground mt-2 text-xs">
-                      To combine them, use the newer description and then edit the step with the
-                      combined wording.
-                    </p>
-                  )}
                 </>
               ) : (
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="text-muted-foreground">Preparing a recommendation…</span>
-                  {d.status === 'open' && (
+                  {canDecide && (
                     <Button
                       size="sm"
                       variant="outline"
@@ -169,7 +172,52 @@ export function DisagreementDialog({
               )}
             </div>
 
-            {d.status === 'open' ? (
+            {canDecide && d.field !== 'remove' && (
+              <div className="grid gap-2 rounded-md border border-dashed p-3 text-sm">
+                {combined === null && rec?.choice !== 'both' ? (
+                  <button
+                    type="button"
+                    className="text-muted-foreground w-fit text-left text-xs underline"
+                    onClick={() => setCombined('')}
+                  >
+                    Both are true in different cases? Write a combined version
+                  </button>
+                ) : (
+                  <>
+                    <label htmlFor="combined" className="font-medium">
+                      Combine both
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      <Input
+                        id="combined"
+                        className="min-w-0 flex-1"
+                        value={combined ?? rec?.suggestedValue ?? ''}
+                        onChange={(e) => setCombined(e.target.value)}
+                        placeholder="e.g. Procurement Manager; Head of Procurement for strategic suppliers"
+                      />
+                      <Button
+                        size="sm"
+                        disabled={busy || (combined ?? rec?.suggestedValue ?? '').trim().length < 2}
+                        onClick={() =>
+                          resolve('combine', (combined ?? rec?.suggestedValue ?? '').trim())
+                        }
+                      >
+                        <Combine />
+                        Use combined
+                      </Button>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+
+            {isParty && d.status === 'open' && (
+              <p className="text-muted-foreground text-sm">
+                You described this yourself, so an admin decides it. You can still see both sides
+                and the AI's recommendation.
+              </p>
+            )}
+            {canDecide ? (
               <Input
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
@@ -177,7 +225,7 @@ export function DisagreementDialog({
                 aria-label="Decision note"
               />
             ) : (
-              <p className="text-sm">Settled: {d.resolution}</p>
+              d.status === 'resolved' && <p className="text-sm">Settled: {d.resolution}</p>
             )}
             {d.status === 'open' && d.resolution && (
               <p className="text-muted-foreground text-xs">{d.resolution}</p>

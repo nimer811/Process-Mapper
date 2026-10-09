@@ -1,7 +1,6 @@
 import {
   and,
   arrayContains,
-  count,
   disagreements,
   desc,
   eq,
@@ -147,28 +146,55 @@ export async function syncVersionTasks(db: Db, versionId: string, notifier: Noti
     }
   }
 
-  // Colleagues described something differently: the owner (or admins, until there is one) settles it.
-  const [{ n: differing } = { n: 0 }] = await db
-    .select({ n: count() })
+  // Colleagues described something differently: the owner settles it — unless the owner is one of
+  // the people who disagree (or there is no owner yet), then admins do.
+  const differing = await db
+    .select({ current: disagreements.currentUserId, proposed: disagreements.proposedUserId })
     .from(disagreements)
     .where(and(eq(disagreements.versionId, v.id), eq(disagreements.status, 'open')));
-  if (!p.archivedAt && differing > 0 && (v.status === 'draft' || v.status === 'under_validation')) {
-    for (const id of p.ownerUserId ? [p.ownerUserId] : await admins()) {
+  if (
+    !p.archivedAt &&
+    differing.length &&
+    (v.status === 'draft' || v.status === 'under_validation')
+  ) {
+    const ownerIsParty = (d: (typeof differing)[number]) =>
+      d.current === p.ownerUserId || d.proposed === p.ownerUserId;
+    const forOwner = p.ownerUserId ? differing.filter((d) => !ownerIsParty(d)).length : 0;
+    const forAdmins = differing.length - forOwner;
+    const settle = (userId: string, n: number) =>
       wanted.push({
         ...base,
-        userId: id,
+        userId,
         kind: 'resolve_disagreements',
-        title: `Settle ${differing} difference${differing === 1 ? '' : 's'} on "${p.name}"`,
+        title: `Settle ${n} difference${n === 1 ? '' : 's'} on "${p.name}"`,
         detail:
           'Colleagues described parts of this process differently. The AI has a recommendation for each; you decide.',
       });
-    }
+    const adminIds = forAdmins ? await admins() : [];
+    // An owner who is also an admin gets one action covering both.
+    if (forOwner)
+      settle(p.ownerUserId!, forOwner + (adminIds.includes(p.ownerUserId!) ? forAdmins : 0));
+    for (const id of adminIds) if (!(forOwner && id === p.ownerUserId)) settle(id, forAdmins);
   }
 
   const keep: string[] = [];
   for (const t of wanted) {
     const opened = await openTask(db, t, notifier);
     if (opened) keep.push(opened.id);
+  }
+  // Counts in titles change as differences are settled: keep open actions' wording current.
+  for (const t of wanted) {
+    await db
+      .update(tasks)
+      .set({ title: t.title, detail: t.detail ?? null })
+      .where(
+        and(
+          eq(tasks.userId, t.userId),
+          eq(tasks.kind, t.kind),
+          eq(tasks.versionId, v.id),
+          eq(tasks.status, 'open'),
+        ),
+      );
   }
   const stillOpen = await db
     .select({ id: tasks.id, userId: tasks.userId, kind: tasks.kind })

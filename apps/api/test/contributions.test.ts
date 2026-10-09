@@ -240,13 +240,44 @@ describe('Several people, one process', () => {
         )
       ).statusCode,
     ).toBe(403);
+    // The Procurement Lead becomes the process owner: they're one of the two people, so an admin decides.
+    await t.app.inject({
+      method: 'PATCH',
+      url: `/api/v1/processes/${interview.processId}`,
+      headers: t.as(ADMIN),
+      payload: { ownerUserId: t.as(OWNER)['x-dev-user-id'] },
+    });
+    expect((await open(OWNER)).filter((x) => x.kind === 'resolve_disagreements')).toEqual([]);
+    expect((await open(ADMIN)).find((x) => x.kind === 'resolve_disagreements')!.title).toMatch(
+      /Settle 2 differences/,
+    );
+    const asOwner = await post(
+      `/versions/${interview.versionId}/disagreements/${actor!.id}/resolve`,
+      OWNER,
+      { decision: 'accept' },
+    );
+    expect(asOwner.statusCode).toBe(403);
+    expect(asOwner.json<{ title: string }>().title).toMatch(/admin decides/);
+
+    // Both are true: one click applies the combined wording.
     expect(
       (
         await post(`/versions/${interview.versionId}/disagreements/${actor!.id}/resolve`, ADMIN, {
-          decision: 'accept',
+          decision: 'combine',
+        })
+      ).statusCode,
+    ).toBe(400);
+    expect(
+      (
+        await post(`/versions/${interview.versionId}/disagreements/${actor!.id}/resolve`, ADMIN, {
+          decision: 'combine',
+          value: 'Procurement Manager; Category Manager for strategic categories',
         })
       ).statusCode,
     ).toBe(204);
+    expect((await open(ADMIN)).find((x) => x.kind === 'resolve_disagreements')!.title).toMatch(
+      /Settle 1 difference on/,
+    );
     expect(
       (
         await post(`/versions/${interview.versionId}/disagreements/${ruleD!.id}/resolve`, ADMIN, {
@@ -258,7 +289,9 @@ describe('Several people, one process', () => {
 
     const g = await get<VersionGraph>(`/versions/${interview.versionId}`, ADMIN);
     const approve = g.steps.find((s) => s.name === 'Approve supplier')!;
-    expect(approve.actor?.name).toBe('Category Manager');
+    expect(approve.actor?.name).toBe(
+      'Procurement Manager; Category Manager for strategic categories',
+    );
     expect(approve.provenance).toBe('confirmed');
     expect(g.rules[0]).toMatchObject({
       statement: 'Spend above AED 1 million needs Head of Procurement approval',
@@ -267,7 +300,7 @@ describe('Several people, one process', () => {
 
     const list = await get<Disagreement[]>(`/versions/${interview.versionId}/disagreements`, ADMIN);
     expect(list.map((d) => [d.status, d.resolution])).toEqual([
-      ['resolved', 'Accepted: Category Manager'],
+      ['resolved', 'Combined: Procurement Manager; Category Manager for strategic categories'],
       [
         'resolved',
         'Kept: Spend above AED 1 million needs Head of Procurement approval — Policy says 1 million',

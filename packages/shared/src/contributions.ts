@@ -72,11 +72,17 @@ export const Disagreement = z.object({
 });
 export type Disagreement = z.infer<typeof Disagreement>;
 
-export const ResolveDisagreementInput = z.object({
-  /** keep: the current version stands; accept: apply what the second person said. */
-  decision: z.enum(['keep', 'accept']),
-  note: z.string().trim().max(1000).optional(),
-});
+export const ResolveDisagreementInput = z
+  .object({
+    /** keep: the current version stands; accept: apply what the second person said; combine: apply `value` (both are true). */
+    decision: z.enum(['keep', 'accept', 'combine']),
+    value: z.string().trim().min(2).max(1000).optional(),
+    note: z.string().trim().max(1000).optional(),
+  })
+  .refine((x) => x.decision !== 'combine' || !!x.value, {
+    message: 'Give the combined wording',
+    path: ['value'],
+  });
 
 export const AskAboutDisagreementInput = z.object({
   /** Whose interview to send the question to. */

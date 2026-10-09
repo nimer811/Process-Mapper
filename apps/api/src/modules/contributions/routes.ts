@@ -160,7 +160,15 @@ export const contributionRoutes: FastifyPluginAsyncZod<{ db: Db; llm: LlmGateway
       const { user, ctx } = await manage(request, request.params.id);
       const d = await disagreementOf(ctx.version.id, request.params.disagreementId);
       if (d.status !== 'open') throw app.httpErrors.conflict('Already settled');
+      // Nobody settles a difference they are part of; an admin does.
+      if (!ctx.actor.isAdmin && (d.currentUserId === user.id || d.proposedUserId === user.id))
+        throw app.httpErrors.forbidden('You described this yourself, so an admin decides it');
       const { decision, note } = request.body;
+      if (decision === 'combine' && d.field === 'remove')
+        throw app.httpErrors.badRequest(
+          'A step or connection either happens or not; keep or accept instead',
+        );
+      const value = decision === 'combine' ? request.body.value! : d.proposedValue;
 
       if (decision === 'keep') {
         await edit.acceptElement(db, ctx, user.id, d.entityType, d.entityId);
@@ -168,12 +176,12 @@ export const contributionRoutes: FastifyPluginAsyncZod<{ db: Db; llm: LlmGateway
         if (d.entityType === 'step') await edit.deleteStep(db, ctx, d.entityId);
         else if (d.entityType === 'edge') await edit.deleteEdge(db, ctx, d.entityId);
       } else if (d.field === 'statement') {
-        await edit.updateRuleStatement(db, ctx, user.id, d.entityId, d.proposedValue);
+        await edit.updateRuleStatement(db, ctx, user.id, d.entityId, value);
       } else if (d.field === 'execution') {
-        if (!executionModes.includes(d.proposedValue as ExecutionMode))
+        if (!executionModes.includes(value as ExecutionMode))
           throw app.httpErrors.badRequest('Not a valid execution mode');
         await edit.updateStep(db, ctx, user.id, d.entityId, {
-          execution: d.proposedValue as ExecutionMode,
+          execution: value as ExecutionMode,
         });
       } else {
         const key = {
@@ -182,10 +190,14 @@ export const contributionRoutes: FastifyPluginAsyncZod<{ db: Db; llm: LlmGateway
           expected_duration: 'expectedDuration',
           approval_authority: 'approvalAuthority',
         }[d.field];
-        await edit.updateStep(db, ctx, user.id, d.entityId, { [key]: d.proposedValue });
+        await edit.updateStep(db, ctx, user.id, d.entityId, { [key]: value });
       }
       const label =
-        decision === 'keep' ? `Kept: ${d.currentValue}` : `Accepted: ${d.proposedValue}`;
+        decision === 'keep'
+          ? `Kept: ${d.currentValue}`
+          : decision === 'combine'
+            ? `Combined: ${value}`
+            : `Accepted: ${d.proposedValue}`;
       await db
         .update(disagreements)
         .set({
