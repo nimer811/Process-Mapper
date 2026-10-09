@@ -6,3 +6,5 @@ export * from './knowledge.js';
 export * from './governance.js';
 export * from './tasks.js';
 export * from './contributions.js';
+export * from './controls.js';
+export * from './sop.js';

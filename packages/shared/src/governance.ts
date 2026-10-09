@@ -30,7 +30,9 @@ export type TransitionInput = z.infer<typeof TransitionInput>;
 
 export const Blocker = z.object({
   kind: z.enum(['inferred', 'disputed', 'contradiction', 'disagreement', 'no_owner', 'structure']),
-  entityType: z.enum(['step', 'edge', 'rule', 'open_item', 'process', 'disagreement']).nullable(),
+  entityType: z
+    .enum(['step', 'edge', 'rule', 'control', 'open_item', 'process', 'disagreement'])
+    .nullable(),
   entityId: z.uuid().nullable(),
   description: z.string(),
   /** Warnings are shown but don't block validation. */

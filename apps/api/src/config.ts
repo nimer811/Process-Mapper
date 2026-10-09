@@ -19,6 +19,11 @@ const ConfigSchema = z
     SEED_DEMO_ON_START: z.stringbool().default(false),
     /** Directory of the built SPA; when set, the API serves it. */
     WEB_DIST_DIR: z.string().optional(),
+    /** Organisation code at the start of document IDs, e.g. 7X → 7X-PRC-SOP-001. */
+    ORG_CODE: z
+      .string()
+      .regex(/^[A-Z0-9]{1,6}$/)
+      .default('ORG'),
     CORS_ORIGIN: z.string().optional(),
     LLM_PROVIDER: z.enum(['openai', 'azure']).default('openai'),
     LLM_API_KEY: z.string().optional(),

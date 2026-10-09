@@ -21,3 +21,5 @@ export { LlmDocumentClassifier } from './knowledge-classifier.js';
 export { designToBe, type DesignOpportunity } from './design/designer.js';
 export { applyDesign, type AppliedDesign } from './design/apply.js';
 export { DesignResult, type DesignOp } from './design/ops.js';
+export { suggestControls } from './controls/suggest.js';
+export { draftSopWording, plainSopWording } from './sop/wording.js';

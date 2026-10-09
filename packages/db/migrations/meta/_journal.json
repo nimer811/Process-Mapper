@@ -64,6 +64,13 @@
       "when": 1791460678286,
       "tag": "0008_contributions",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1791525112866,
+      "tag": "0009_controls_and_sop",
+      "breakpoints": true
     }
   ]
 }

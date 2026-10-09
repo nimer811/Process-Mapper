@@ -30,6 +30,8 @@ import { GovernanceBar } from '@/features/governance/governance-bar';
 import { OwnerSelect } from '@/features/governance/owner-select';
 import { ReviewPanel } from '@/features/governance/review-panel';
 import { ContributorsCard } from '@/features/contributions/contributors-card';
+import { ControlsPanel } from '@/features/controls/controls-panel';
+import { SopPanel } from '@/features/sop/sop-panel';
 import { StepDialog } from '@/features/governance/step-dialog';
 import { ConnectionsEditor, RulesEditor } from '@/features/governance/structure-editors';
 import { MetadataDialog } from '@/features/governance/metadata-dialog';
@@ -129,6 +131,8 @@ export function ProcessPage() {
           {g.kind === 'to_be' && <TabsTrigger value="changes">As-Is vs To-Be</TabsTrigger>}
           <TabsTrigger value="map">Process map</TabsTrigger>
           <TabsTrigger value="details">Details</TabsTrigger>
+          <TabsTrigger value="controls">Controls</TabsTrigger>
+          {g.kind === 'as_is' && <TabsTrigger value="sop">SOP</TabsTrigger>}
           <TabsTrigger value="issues">Issues</TabsTrigger>
           <TabsTrigger value="automation">Automation</TabsTrigger>
           <TabsTrigger value="documents">Documents</TabsTrigger>
@@ -180,6 +184,14 @@ export function ProcessPage() {
           )}
         </TabsContent>
 
+        <TabsContent value="controls">
+          <ControlsPanel graph={g} readiness={r} />
+        </TabsContent>
+        {g.kind === 'as_is' && (
+          <TabsContent value="sop">
+            <SopPanel graph={g} />
+          </TabsContent>
+        )}
         <TabsContent value="issues">
           <IssuesTab graph={g} findings={findings.data} onSelectStep={setSelectedStepId} />
         </TabsContent>

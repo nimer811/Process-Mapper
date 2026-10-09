@@ -10,7 +10,9 @@ export type LlmPurpose =
   | 'analyse'
   | 'classify'
   | 'design'
-  | 'reconcile';
+  | 'reconcile'
+  | 'controls'
+  | 'sop';
 
 export interface LlmCallRecord {
   purpose: LlmPurpose;

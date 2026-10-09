@@ -2,6 +2,7 @@ import {
   and,
   asc,
   businessRules,
+  controls,
   desc,
   disagreements,
   documentChunks,
@@ -131,6 +132,18 @@ export async function computeBlockers(db: Db, ctx: VersionContext): Promise<Bloc
         description: `Rule "${r.statement}" was ${r.provenance === 'inferred' ? 'inferred by the AI' : 'disputed'}. Confirm or remove it.`,
       });
     }
+  }
+  // Controls the AI drafted are not fact until someone confirms them.
+  for (const c of await db
+    .select({ id: controls.id, key: controls.controlKey, name: controls.name })
+    .from(controls)
+    .where(and(eq(controls.versionId, versionId), eq(controls.provenance, 'inferred')))) {
+    add({
+      kind: 'inferred',
+      entityType: 'control',
+      entityId: c.id,
+      description: `Control ${c.key} "${c.name}" was drafted by the AI. Confirm or remove it.`,
+    });
   }
   // People described something differently: the owner settles it (the AI recommends).
   const differing = await db
@@ -473,6 +486,19 @@ export async function cloneVersion(
       const [copy] = await tx
         .insert(businessRules)
         .values({ ...rest, versionId: nv, stepId: r.stepId ? ids.get(r.stepId)! : null })
+        .returning();
+      ids.set(id, copy!.id);
+    }
+    for (const c of await tx.select().from(controls).where(eq(controls.versionId, src.id))) {
+      const { id, versionId: _v, createdAt: _c, updatedAt: _u, ...rest } = c;
+      const [copy] = await tx
+        .insert(controls)
+        .values({
+          ...rest,
+          versionId: nv,
+          ruleId: c.ruleId ? (ids.get(c.ruleId) ?? null) : null,
+          stepIds: c.stepIds.flatMap((sid) => (ids.has(sid) ? [ids.get(sid)!] : [])),
+        })
         .returning();
       ids.set(id, copy!.id);
     }

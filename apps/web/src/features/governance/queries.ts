@@ -60,6 +60,8 @@ export function useRefreshProcess() {
         'interviews',
         'design',
         'findings',
+        'controls',
+        'sop',
         'tasks',
         'contributors',
         'disagreements',

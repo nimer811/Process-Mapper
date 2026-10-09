@@ -136,9 +136,26 @@ function BlockerRow({
       setBusy(false);
     }
   };
-  const element = b.entityType === 'step' || b.entityType === 'edge' || b.entityType === 'rule';
+  const element =
+    b.entityType === 'step' ||
+    b.entityType === 'edge' ||
+    b.entityType === 'rule' ||
+    b.entityType === 'control';
   const removePath =
-    b.entityType === 'step' ? 'steps' : b.entityType === 'edge' ? 'edges' : 'rules';
+    b.entityType === 'step'
+      ? 'steps'
+      : b.entityType === 'edge'
+        ? 'edges'
+        : b.entityType === 'control'
+          ? 'controls'
+          : 'rules';
+  const confirm = () =>
+    b.entityType === 'control'
+      ? api(`/versions/${versionId}/controls/${b.entityId}/confirm`, { method: 'POST' })
+      : api(`/versions/${versionId}/accept`, {
+          method: 'POST',
+          body: JSON.stringify({ entityType: b.entityType, entityId: b.entityId }),
+        });
 
   return (
     <div className="flex flex-wrap items-center gap-2 rounded-md border p-2.5 text-sm">
@@ -149,16 +166,7 @@ function BlockerRow({
             size="sm"
             variant="outline"
             disabled={busy}
-            onClick={() =>
-              call(
-                () =>
-                  api(`/versions/${versionId}/accept`, {
-                    method: 'POST',
-                    body: JSON.stringify({ entityType: b.entityType, entityId: b.entityId }),
-                  }),
-                'Confirmed',
-              )
-            }
+            onClick={() => call(confirm, 'Confirmed')}
           >
             <Check />
             Confirm

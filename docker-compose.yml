@@ -37,6 +37,7 @@ services:
       ALLOW_DEV_AUTH: 'true' # local only — Entra ID replaces this in Phase 6
       MIGRATE_ON_START: 'true'
       SEED_ON_START: 'true'
+      ORG_CODE: ${ORG_CODE:-7X} # first part of document IDs, e.g. 7X-PRC-SOP-001
       SEED_DEMO_ON_START: 'true' # demo processes; set to 'false' for the real pilot data
       LOG_LEVEL: info
     volumes:

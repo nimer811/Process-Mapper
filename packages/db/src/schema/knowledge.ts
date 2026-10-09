@@ -6,6 +6,7 @@ import {
   date,
   index,
   integer,
+  jsonb,
   numeric,
   pgEnum,
   pgTable,
@@ -20,10 +21,14 @@ import {
   documentCategories,
   documentStatuses,
   EMBEDDING_DIMENSIONS,
+  sopStatuses,
+  type SopWording,
 } from '@process-ai/shared';
 import { id, timestamps } from './columns.js';
 import { departments, users } from './identity.js';
-import { processes } from './process.js';
+import { processes, processVersions } from './process.js';
+
+export const sopStatus = pgEnum('sop_status', sopStatuses);
 
 export const documentCategory = pgEnum('document_category', documentCategories);
 export const documentStatus = pgEnum('document_status', documentStatuses);
@@ -105,3 +110,23 @@ export const documentChunks = pgTable(
     index('document_chunks_tsv_gin').using('gin', t.tsv),
   ],
 );
+
+/** The SOP generated from a process version: AI-drafted wording the owner reviews, then publishes to the knowledge base. */
+export const sopDocuments = pgTable('sop_documents', {
+  id: id(),
+  versionId: uuid()
+    .notNull()
+    .unique()
+    .references(() => processVersions.id, { onDelete: 'cascade' }),
+  docId: text().notNull(),
+  docVersion: text().notNull(),
+  status: sopStatus().notNull().default('draft'),
+  wording: jsonb().$type<SopWording>().notNull(),
+  aiDrafted: boolean().notNull().default(true),
+  generatedBy: uuid().references(() => users.id),
+  generatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  publishedBy: uuid().references(() => users.id),
+  publishedAt: timestamp({ withTimezone: true }),
+  knowledgeDocumentId: uuid().references(() => documents.id, { onDelete: 'set null' }),
+  ...timestamps,
+});

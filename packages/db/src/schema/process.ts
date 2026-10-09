@@ -14,6 +14,9 @@ import {
 } from 'drizzle-orm/pg-core';
 import {
   actorKinds,
+  controlModes,
+  controlTypes,
+  docClassifications,
   edgeTypes,
   evidenceSources,
   executionModes,
@@ -32,6 +35,9 @@ export const versionKind = pgEnum('version_kind', versionKinds);
 export const stepType = pgEnum('step_type', stepTypes);
 export const edgeType = pgEnum('edge_type', edgeTypes);
 export const provenance = pgEnum('provenance', provenances);
+export const controlType = pgEnum('control_type', controlTypes);
+export const controlMode = pgEnum('control_mode', controlModes);
+export const docClassification = pgEnum('doc_classification', docClassifications);
 export const executionMode = pgEnum('execution_mode', executionModes);
 export const actorKind = pgEnum('actor_kind', actorKinds);
 export const ruleType = pgEnum('rule_type', ruleTypes);
@@ -73,6 +79,10 @@ export const processes = pgTable(
     currentVersionId: uuid().references((): AnyPgColumn => processVersions.id),
     createdBy: uuid().references(() => users.id),
     archivedAt: timestamp({ withTimezone: true }),
+    /** SOP number within the department (assigned on first SOP), e.g. 1 → 7X-PRC-SOP-001. */
+    sopNumber: integer(),
+    classification: docClassification().notNull().default('internal'),
+    reviewCycleMonths: integer().notNull().default(12),
     ...timestamps,
   },
   (t) => [unique().on(t.departmentId, t.slug)],
@@ -209,6 +219,36 @@ export const businessRules = pgTable(
     ...timestamps,
   },
   (t) => [index().on(t.versionId)],
+);
+
+/**
+ * Controls: the activities that enforce rules or reduce risks (preventive/detective), with an owner,
+ * frequency and the evidence that proves they ran. Keys are unique within a department.
+ */
+export const controls = pgTable(
+  'controls',
+  {
+    id: id(),
+    versionId: uuid()
+      .notNull()
+      .references(() => processVersions.id, { onDelete: 'cascade' }),
+    controlKey: text().notNull(),
+    name: text().notNull(),
+    description: text(),
+    controlType: controlType().notNull().default('preventive'),
+    mode: controlMode().notNull().default('manual'),
+    frequency: text(),
+    ownerRole: text(),
+    evidence: text(),
+    isKey: boolean().notNull().default(false),
+    risk: text(),
+    ruleId: uuid().references(() => businessRules.id, { onDelete: 'set null' }),
+    /** Steps where the control applies (ids within the same version). */
+    stepIds: uuid().array().notNull().default([]),
+    provenance: provenance().notNull().default('stated'),
+    ...timestamps,
+  },
+  (t) => [index().on(t.versionId), unique().on(t.versionId, t.controlKey)],
 );
 
 // ---- Provenance and lifecycle ----
