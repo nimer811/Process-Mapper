@@ -34,6 +34,14 @@ export function ProcessTable({ items }: { items: ProcessListItem[] }) {
               >
                 {p.name}
               </Link>
+              {p.category && (
+                <span
+                  className="text-muted-foreground ml-2 font-mono text-xs"
+                  title={p.category.name}
+                >
+                  {p.category.code}
+                </span>
+              )}
               {p.description && (
                 <p className="text-muted-foreground truncate text-xs">{p.description}</p>
               )}

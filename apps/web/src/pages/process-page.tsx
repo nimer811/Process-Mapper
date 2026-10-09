@@ -33,6 +33,8 @@ import { ContributorsCard } from '@/features/contributions/contributors-card';
 import { ControlsPanel } from '@/features/controls/controls-panel';
 import { SopPanel } from '@/features/sop/sop-panel';
 import { OwnershipPanel } from '@/features/ownership/ownership-panel';
+import { ClassificationPicker } from '@/features/architecture/classification';
+import { ConnectedProcesses } from '@/features/architecture/connected-processes';
 import { StepDialog } from '@/features/governance/step-dialog';
 import { ConnectionsEditor, RulesEditor } from '@/features/governance/structure-editors';
 import { MetadataDialog } from '@/features/governance/metadata-dialog';
@@ -45,6 +47,7 @@ import { ChangesPanel } from '@/features/design/changes-panel';
 
 export function ProcessPage() {
   const { processId = '' } = useParams();
+  const { user, hasRole } = useAuth();
   const [params, setParams] = useSearchParams();
   const process = useProcess(processId);
   const versionId = params.get('version') ?? process.data?.defaultVersionId;
@@ -119,6 +122,13 @@ export function ProcessPage() {
           <ContributorsCard graph={g} readiness={r} />
         </div>
       )}
+      <div className="mt-4">
+        <ConnectedProcesses
+          process={p}
+          graph={g}
+          canManage={!p.archivedAt && (hasRole('admin') || p.owner?.id === user?.id)}
+        />
+      </div>
 
       {g.kind === 'to_be' && (
         <p className="mt-4 rounded-md bg-violet-50 px-3 py-2 text-sm text-violet-900 dark:bg-violet-950 dark:text-violet-100">
@@ -313,8 +323,14 @@ function ProcessHeader({
       )}
       {g.description && <p className="text-muted-foreground mt-1 max-w-3xl">{g.description}</p>}
 
-      <dl className="mt-4 grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-4">
+      <dl className="mt-4 grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-3 lg:grid-cols-5">
         <Meta label="Department">{p.department.name}</Meta>
+        <Meta label="Process level">
+          <ClassificationPicker
+            process={p}
+            canManage={!p.archivedAt && (r.canAssignOwner || p.owner?.id === user?.id)}
+          />
+        </Meta>
         <Meta label="Process owner">
           {r.canAssignOwner ? <OwnerSelect process={p} /> : (p.owner?.displayName ?? 'Unassigned')}
         </Meta>

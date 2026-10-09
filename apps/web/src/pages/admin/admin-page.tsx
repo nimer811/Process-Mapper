@@ -4,6 +4,7 @@ import {
   Building2,
   ClipboardCheck,
   Lightbulb,
+  Network,
   MessagesSquare,
   ScrollText,
   Users,
@@ -48,6 +49,12 @@ const sections: {
     description: 'Practices the AI applies in To-Be designs and checks.',
     icon: Lightbulb,
     to: '/admin/best-practices',
+  },
+  {
+    title: 'Process classification',
+    description: 'APQC-based process levels and which department covers each.',
+    icon: Network,
+    to: '/admin/classification',
   },
   {
     title: 'Users and owners',

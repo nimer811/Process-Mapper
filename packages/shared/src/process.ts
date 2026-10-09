@@ -107,6 +107,8 @@ export const ProcessListItem = z.object({
   stepCount: z.number().int(),
   lastReviewedAt: z.iso.datetime().nullable(),
   updatedAt: z.iso.datetime(),
+  /** Where it sits in the process classification (e.g. APQC 4.2.2). */
+  category: z.object({ id: z.uuid(), code: z.string(), name: z.string() }).nullable(),
 });
 export type ProcessListItem = z.infer<typeof ProcessListItem>;
 
@@ -135,6 +137,7 @@ export const ProcessDetail = z.object({
   archivedAt: z.iso.datetime().nullable(),
   defaultVersionId: z.uuid(),
   versions: z.array(VersionSummary),
+  category: z.object({ id: z.uuid(), code: z.string(), name: z.string() }).nullable(),
 });
 export type ProcessDetail = z.infer<typeof ProcessDetail>;
 

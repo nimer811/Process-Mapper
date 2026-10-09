@@ -38,6 +38,7 @@ import { contributionRoutes } from './modules/contributions/routes.js';
 import { controlRoutes } from './modules/governance/controls-routes.js';
 import { sopRoutes } from './modules/sop/routes.js';
 import { practiceRoutes } from './modules/practices/routes.js';
+import { architectureRoutes } from './modules/architecture/routes.js';
 
 export interface AppDeps {
   config: Config;
@@ -128,6 +129,7 @@ export async function buildApp(
       await api.register(contributionRoutes, { db, llm: gateway });
       await api.register(controlRoutes, { db, llm: gateway });
       await api.register(practiceRoutes, { db });
+      await api.register(architectureRoutes, { db, llm: gateway });
       await api.register(sopRoutes, {
         db,
         llm: gateway,

@@ -14,6 +14,7 @@ import {
   processEdges,
   processes,
   processSteps,
+  processCategories,
   processVersions,
   sql,
   stepDependencies,
@@ -78,10 +79,12 @@ export async function listProcesses(
       process: processes,
       department: { id: departments.id, name: departments.name, slug: departments.slug },
       owner: { id: owner.id, displayName: owner.displayName, email: owner.email },
+      category: { id: processCategories.id, code: processCategories.code, name: processCategories.name },
     })
     .from(processes)
     .innerJoin(departments, eq(departments.id, processes.departmentId))
     .leftJoin(owner, eq(owner.id, processes.ownerUserId))
+    .leftJoin(processCategories, eq(processCategories.id, processes.categoryId))
     .where(
       and(
         isNull(processes.archivedAt),
@@ -115,7 +118,7 @@ export async function listProcesses(
   const matches = query.q ? await searchVersionIds(db, query.q) : null;
 
   const items: ProcessListItem[] = [];
-  for (const { process: p, department, owner: o } of procRows) {
+  for (const { process: p, department, owner: o, category } of procRows) {
     const ctx = { ownerUserId: p.ownerUserId, processCreatedBy: p.createdBy };
     const v = pickDefaultVersion(
       user,
@@ -139,6 +142,7 @@ export async function listProcesses(
       stepCount: stepCountByVersion.get(v.id) ?? 0,
       lastReviewedAt: isoOrNull(v.approvedAt ?? v.validatedAt),
       updatedAt: iso(v.updatedAt),
+      category: category?.id ? category : null,
     });
   }
   return items;
@@ -153,9 +157,11 @@ export async function getProcess(
     .select({
       process: processes,
       department: { id: departments.id, name: departments.name, slug: departments.slug },
+      category: { id: processCategories.id, code: processCategories.code, name: processCategories.name },
     })
     .from(processes)
     .innerJoin(departments, eq(departments.id, processes.departmentId))
+    .leftJoin(processCategories, eq(processCategories.id, processes.categoryId))
     .where(eq(processes.id, processId));
   if (!row) return null;
   const p = row.process;
@@ -188,6 +194,7 @@ export async function getProcess(
     createdBy: ref(p.createdBy),
     archivedAt: isoOrNull(p.archivedAt),
     defaultVersionId: defaultVersion.id,
+    category: row.category?.id ? row.category : null,
     versions: versions.map((v) => ({
       id: v.id,
       versionNumber: v.versionNumber,

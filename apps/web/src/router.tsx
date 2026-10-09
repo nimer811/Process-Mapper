@@ -10,6 +10,8 @@ import { AdminPage } from '@/pages/admin/admin-page';
 import { DepartmentsAdminPage } from '@/pages/admin/departments-page';
 import { InterviewsPage } from '@/pages/interviews-page';
 import { InboxPage } from '@/pages/inbox-page';
+import { FlowPage } from '@/pages/flow-page';
+import { ClassificationPage } from '@/pages/admin/classification-page';
 import { InterviewPage } from '@/pages/interview-page';
 import { ChatPage } from '@/pages/chat-page';
 import { KnowledgeBasePage, KnowledgePage } from '@/pages/knowledge-page';
@@ -34,6 +36,7 @@ export const router = createBrowserRouter([
           { path: 'library', element: <LibraryPage /> },
           { path: 'library/:departmentSlug', element: <DepartmentPage /> },
           { path: 'processes/:processId', element: <ProcessPage /> },
+          { path: 'processes/:processId/flow', element: <FlowPage /> },
           { path: 'knowledge', element: <KnowledgePage /> },
           { path: 'knowledge/:knowledgeBaseId', element: <KnowledgeBasePage /> },
           {
@@ -44,6 +47,7 @@ export const router = createBrowserRouter([
               { path: 'admin/interviews', element: <InterviewsPage all /> },
               { path: 'admin/approvals', element: <ApprovalsPage /> },
               { path: 'admin/best-practices', element: <BestPracticesPage /> },
+              { path: 'admin/classification', element: <ClassificationPage /> },
               { path: 'admin/knowledge', element: <KnowledgePage admin /> },
               { path: 'admin/knowledge/:knowledgeBaseId', element: <KnowledgeBasePage admin /> },
             ],

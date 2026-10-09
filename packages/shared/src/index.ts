@@ -9,3 +9,4 @@ export * from './contributions.js';
 export * from './controls.js';
 export * from './sop.js';
 export * from './ownership.js';
+export * from './architecture.js';

@@ -24,3 +24,4 @@ export { DesignResult, type DesignOp } from './design/ops.js';
 export { suggestControls } from './controls/suggest.js';
 export { draftSopWording, plainSopWording } from './sop/wording.js';
 export { ownershipView, relevantPractices, runOwnershipChecks } from './ownership/checks.js';
+export { suggestCategory, suggestLinks } from './architecture/suggest.js';

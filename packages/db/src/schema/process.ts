@@ -65,6 +65,24 @@ export const systems = pgTable('systems', {
 
 // ---- Process identity and versions ----
 
+/** Process classification (APQC PCF style): L1 category → L2 process group → L3 process. */
+export const processCategories = pgTable(
+  'process_categories',
+  {
+    id: id(),
+    code: text().notNull().unique(),
+    name: text().notNull(),
+    level: integer().notNull(),
+    parentId: uuid().references((): AnyPgColumn => processCategories.id, { onDelete: 'cascade' }),
+    /** Department expected to own processes under this node (coverage dashboard). */
+    departmentId: uuid().references(() => departments.id, { onDelete: 'set null' }),
+    description: text(),
+    source: text(),
+    ...timestamps,
+  },
+  (t) => [index().on(t.parentId)],
+);
+
 export const processes = pgTable(
   'processes',
   {
@@ -80,6 +98,8 @@ export const processes = pgTable(
     createdBy: uuid().references(() => users.id),
     archivedAt: timestamp({ withTimezone: true }),
     /** SOP number within the department (assigned on first SOP), e.g. 1 → 7X-PRC-SOP-001. */
+    /** Where it sits in the process classification (APQC-style). */
+    categoryId: uuid().references((): AnyPgColumn => processCategories.id, { onDelete: 'set null' }),
     sopNumber: integer(),
     classification: docClassification().notNull().default('internal'),
     reviewCycleMonths: integer().notNull().default(12),
@@ -297,4 +317,26 @@ export const validationEvents = pgTable(
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [index().on(t.versionId)],
+);
+
+/** One process handing off to another (end-to-end flows). AI-suggested links stay inferred until confirmed. */
+export const processLinks = pgTable(
+  'process_links',
+  {
+    id: id(),
+    fromProcessId: uuid()
+      .notNull()
+      .references(() => processes.id, { onDelete: 'cascade' }),
+    toProcessId: uuid()
+      .notNull()
+      .references(() => processes.id, { onDelete: 'cascade' }),
+    /** Step key in the "from" process where the hand-off happens (kept across versions). */
+    fromStepKey: text(),
+    label: text(),
+    provenance: provenance().notNull().default('confirmed'),
+    reasoning: text(),
+    createdBy: uuid().references(() => users.id),
+    ...timestamps,
+  },
+  (t) => [unique().on(t.fromProcessId, t.toProcessId), index().on(t.toProcessId)],
 );
