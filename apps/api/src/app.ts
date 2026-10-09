@@ -28,6 +28,7 @@ import type { Config } from './config.js';
 import { registerErrorHandling } from './plugins/errors.js';
 import type { JWTVerifyGetKey } from 'jose';
 import { authPlugin } from './plugins/auth.js';
+import { registerAccessCode } from './plugins/access-code.js';
 import { RecordingGateway, registerAiContext } from './lib/ai-usage.js';
 import { healthRoutes } from './modules/health/routes.js';
 import { authRoutes } from './modules/auth/routes.js';
@@ -127,6 +128,7 @@ export async function buildApp(
   app.addHook('onClose', () => queue.stop());
   if (config.CORS_ORIGIN) await app.register(cors, { origin: config.CORS_ORIGIN });
   registerErrorHandling(app);
+  registerAccessCode(app, config.DEMO_ACCESS_CODE);
   await app.register(authPlugin, { config, db, entraKeys });
   registerAiContext(app);
 

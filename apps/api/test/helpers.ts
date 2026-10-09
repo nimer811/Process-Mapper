@@ -30,15 +30,22 @@ export async function startTestApp(
     jobs: 'inline',
     entraKeys: opts.entraKeys,
   });
+  const code = opts.env?.DEMO_ACCESS_CODE;
   const devUsers =
     config.AUTH_MODE === 'dev'
-      ? (await app.inject({ method: 'GET', url: '/api/v1/auth/dev-users' })).json<DevUser[]>()
+      ? (
+          await app.inject({
+            method: 'GET',
+            url: '/api/v1/auth/dev-users',
+            headers: code ? { 'x-access-code': code } : {},
+          })
+        ).json<DevUser[]>()
       : [];
 
   const as = (email: string) => {
     const user = devUsers.find((u) => u.email === email);
     if (!user) throw new Error(`No seeded user ${email}`);
-    return { [DEV_USER_HEADER]: user.id };
+    return { [DEV_USER_HEADER]: user.id, ...(code ? { 'x-access-code': code } : {}) };
   };
 
   return {

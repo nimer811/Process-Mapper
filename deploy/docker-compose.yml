@@ -1,0 +1,57 @@
+# Production-style demo on one server (e.g. a DigitalOcean Droplet):
+#   Postgres + pgvector, the Process AI app, and Caddy in front for HTTPS (automatic certificates).
+# Run from this folder:  docker compose up -d --build      Settings: deploy/.env (see env.template)
+name: process-ai
+
+services:
+  db:
+    image: pgvector/pgvector:pg17
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: process_ai
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in deploy/.env}
+      POSTGRES_DB: process_ai
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U process_ai -d process_ai']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  app:
+    build: ..
+    image: process-ai:latest
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://process_ai:${POSTGRES_PASSWORD}@db:5432/process_ai
+      MIGRATE_ON_START: 'true'
+      SEED_ON_START: 'true'
+      LOG_LEVEL: info
+    volumes:
+      - storage:/app/storage
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    depends_on: [app]
+    ports:
+      - '80:80'
+      - '443:443'
+    environment:
+      DOMAIN: ${DOMAIN:?set DOMAIN in deploy/.env}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  pgdata:
+  storage:
+  caddy_data:
+  caddy_config:

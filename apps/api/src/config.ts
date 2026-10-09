@@ -33,6 +33,8 @@ const ConfigSchema = z
       .regex(/^[A-Z0-9]{1,6}$/)
       .default('ORG'),
     CORS_ORIGIN: z.string().optional(),
+    /** Demo protection: every API call needs this code (entered once on the sign-in page). */
+    DEMO_ACCESS_CODE: z.string().min(6).optional(),
     /** Entra ID sign-in (AUTH_MODE=entra): the tenant and the app registration used by the SPA and API. */
     ENTRA_TENANT_ID: z.string().optional(),
     ENTRA_CLIENT_ID: z.string().optional(),

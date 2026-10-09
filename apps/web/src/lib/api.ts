@@ -1,5 +1,6 @@
 import type { ProblemDetails } from '@process-ai/shared';
 import { authHeaders } from '@/auth/headers';
+import { setAccessCode } from '@/auth/access-code';
 
 export class ApiError extends Error {
   constructor(public readonly problem: ProblemDetails) {
@@ -22,6 +23,11 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
     const problem = await res
       .json()
       .catch(() => ({ type: 'about:blank', title: res.statusText, status: res.status }));
+    // The demo access code is missing or was changed: ask for it again.
+    if (res.status === 401 && (problem as ProblemDetails).title === 'Access code required') {
+      setAccessCode(null);
+      if (!window.location.pathname.startsWith('/login')) window.location.assign('/login');
+    }
     throw new ApiError(problem as ProblemDetails);
   }
   return (res.status === 204 ? undefined : await res.json()) as T;

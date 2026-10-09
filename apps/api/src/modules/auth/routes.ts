@@ -13,13 +13,14 @@ export const authRoutes: FastifyPluginAsyncZod<{ db: Db; config: Config }> = asy
     config.AUTH_MODE === 'entra'
       ? {
           mode: 'entra' as const,
+          accessCodeRequired: !!config.DEMO_ACCESS_CODE,
           entra: {
             tenantId: config.ENTRA_TENANT_ID!,
             clientId: config.ENTRA_CLIENT_ID!,
             scope: config.ENTRA_API_SCOPE ?? `api://${config.ENTRA_CLIENT_ID}/access_as_user`,
           },
         }
-      : { mode: 'dev' as const, entra: null },
+      : { mode: 'dev' as const, accessCodeRequired: !!config.DEMO_ACCESS_CODE, entra: null },
   );
 
   app.get('/me', { schema: { response: { 200: CurrentUser } } }, async (request) => {

@@ -22,6 +22,8 @@ export const DEV_USER_HEADER = 'x-dev-user-id';
 /** How the web app signs people in (public). */
 export const AuthConfig = z.object({
   mode: z.enum(['dev', 'entra']),
+  /** The demo is protected by an access code. */
+  accessCodeRequired: z.boolean(),
   entra: z.object({ tenantId: z.string(), clientId: z.string(), scope: z.string() }).nullable(),
 });
 export type AuthConfig = z.infer<typeof AuthConfig>;

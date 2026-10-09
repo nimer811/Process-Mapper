@@ -143,9 +143,7 @@ describe('Process architecture', () => {
     const [inferred] = suggested.json<ProcessLink[]>();
     expect(inferred).toMatchObject({ provenance: 'inferred', label: 'New supplier request' });
 
-    const links = (await req('GET', `/processes/${vendor.id}/links`, OWNER)).json<
-      ProcessLink[]
-    >();
+    const links = (await req('GET', `/processes/${vendor.id}/links`, OWNER)).json<ProcessLink[]>();
     expect(links.map((l) => [l.from.name, l.to.name, l.provenance])).toContainEqual([
       'Vendor Onboarding',
       'Purchase Requisition to PO',

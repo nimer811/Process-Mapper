@@ -162,17 +162,15 @@ describe('AI budget', () => {
       payload: { departmentId: depts[0]!.id },
     });
     const interview = started.json<{ interview: InterviewDetail }>().interview;
-    await t.db
-      .insert(llmCalls)
-      .values({
-        purpose: 'respond',
-        provider: 'mock',
-        model: 'mock',
-        inputTokens: 900,
-        outputTokens: 200,
-        latencyMs: 1,
-        status: 'ok',
-      });
+    await t.db.insert(llmCalls).values({
+      purpose: 'respond',
+      provider: 'mock',
+      model: 'mock',
+      inputTokens: 900,
+      outputTokens: 200,
+      latencyMs: 1,
+      status: 'ok',
+    });
     const res = await t.app.inject({
       method: 'POST',
       url: `/api/v1/interviews/${interview.id}/messages`,
@@ -226,6 +224,7 @@ describe('Sign-in with Microsoft Entra ID', () => {
     const res = await t.app.inject({ method: 'GET', url: '/api/v1/auth/config' });
     expect(res.json()).toEqual({
       mode: 'entra',
+      accessCodeRequired: false,
       entra: { tenantId: TENANT, clientId: CLIENT, scope: `api://${CLIENT}/access_as_user` },
     });
     expect((await t.app.inject({ method: 'GET', url: '/api/v1/auth/dev-users' })).statusCode).toBe(
@@ -283,5 +282,47 @@ describe('Sign-in with Microsoft Entra ID', () => {
         })
       ).statusCode,
     ).toBe(401);
+  });
+});
+
+describe('Demo access code', () => {
+  let t: Awaited<ReturnType<typeof startTestApp>>;
+  beforeAll(async () => {
+    t = await startTestApp({ env: { DEMO_ACCESS_CODE: 'open-sesame-42' } });
+  });
+  afterAll(async () => {
+    await t?.stop();
+  });
+
+  it('keeps the API closed until the code is given, but leaves health checks open', async () => {
+    const config = await t.app.inject({ method: 'GET', url: '/api/v1/auth/config' });
+    expect(config.json()).toMatchObject({ mode: 'dev', accessCodeRequired: true });
+    const blocked = await t.app.inject({ method: 'GET', url: '/api/v1/auth/dev-users' });
+    expect(blocked.statusCode).toBe(401);
+    expect(blocked.json<{ title: string }>().title).toBe('Access code required');
+    expect((await t.app.inject({ method: 'GET', url: '/health' })).statusCode).toBe(200);
+
+    const wrong = await t.app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/access',
+      payload: { code: 'nope' },
+    });
+    expect(wrong.statusCode).toBe(401);
+    const right = await t.app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/access',
+      payload: { code: 'open-sesame-42' },
+    });
+    expect(right.statusCode).toBe(204);
+
+    // With the code (sent by the web app on every call), everything works as usual.
+    const me = await t.app.inject({ method: 'GET', url: '/api/v1/me', headers: t.as(ADMIN) });
+    expect(me.statusCode).toBe(200);
+    const noCode = await t.app.inject({
+      method: 'GET',
+      url: '/api/v1/me',
+      headers: { 'x-dev-user-id': t.as(ADMIN)['x-dev-user-id']! },
+    });
+    expect(noCode.statusCode).toBe(401);
   });
 });
