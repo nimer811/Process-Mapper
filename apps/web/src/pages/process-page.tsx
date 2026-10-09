@@ -35,6 +35,7 @@ import { SopPanel } from '@/features/sop/sop-panel';
 import { OwnershipPanel } from '@/features/ownership/ownership-panel';
 import { ClassificationPicker } from '@/features/architecture/classification';
 import { ConnectedProcesses } from '@/features/architecture/connected-processes';
+import { ValuePanel } from '@/features/value/value-panel';
 import { StepDialog } from '@/features/governance/step-dialog';
 import { ConnectionsEditor, RulesEditor } from '@/features/governance/structure-editors';
 import { MetadataDialog } from '@/features/governance/metadata-dialog';
@@ -147,6 +148,7 @@ export function ProcessPage() {
           {g.kind === 'as_is' && <TabsTrigger value="sop">SOP</TabsTrigger>}
           <TabsTrigger value="issues">Issues</TabsTrigger>
           <TabsTrigger value="automation">Automation</TabsTrigger>
+          <TabsTrigger value="value">Value</TabsTrigger>
           <TabsTrigger value="documents">Documents</TabsTrigger>
           <TabsTrigger value="versions">Versions</TabsTrigger>
         </TabsList>
@@ -212,6 +214,9 @@ export function ProcessPage() {
         </TabsContent>
         <TabsContent value="automation">
           <OpportunitiesTab graph={g} findings={findings.data} onSelectStep={setSelectedStepId} />
+        </TabsContent>
+        <TabsContent value="value">
+          <ValuePanel graph={g} />
         </TabsContent>
         <TabsContent value="documents">
           <ProcessDocuments processId={p.id} />

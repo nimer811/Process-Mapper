@@ -25,3 +25,6 @@ export { suggestControls } from './controls/suggest.js';
 export { draftSopWording, plainSopWording } from './sop/wording.js';
 export { ownershipView, relevantPractices, runOwnershipChecks } from './ownership/checks.js';
 export { suggestCategory, suggestLinks } from './architecture/suggest.js';
+export { computeValue, SAVING_FACTOR, type Estimate } from './value/metrics.js';
+export { estimateTimings } from './value/estimate.js';
+export { formatMinutes, parseDurationMinutes, parseVolumePerMonth } from './value/parse.js';

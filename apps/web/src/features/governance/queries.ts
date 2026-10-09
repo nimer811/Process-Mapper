@@ -66,6 +66,7 @@ export function useRefreshProcess() {
         'process-links',
         'flow',
         'coverage',
+        'value',
         'tasks',
         'contributors',
         'disagreements',

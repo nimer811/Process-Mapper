@@ -1,5 +1,17 @@
 import { sql } from 'drizzle-orm';
-import { boolean, index, pgEnum, pgTable, text, timestamp, unique, uuid } from 'drizzle-orm/pg-core';
+import {
+  boolean,
+  index,
+  integer,
+  pgEnum,
+  pgTable,
+  real,
+  text,
+  timestamp,
+  unique,
+  uniqueIndex,
+  uuid,
+} from 'drizzle-orm/pg-core';
 import {
   designChangeTypes,
   findingSources,
@@ -100,3 +112,27 @@ export const bestPractices = pgTable('best_practices', {
   isActive: boolean().notNull().default(true),
   ...timestamps,
 });
+
+export const estimateSource = pgEnum('estimate_source', ['owner', 'ai']);
+
+/**
+ * Timings and volume used for value analysis, kept apart from the documented map: the owner's
+ * figures or AI estimates per step (stepId) or for the whole process (stepId null = volume).
+ */
+export const valueEstimates = pgTable(
+  'value_estimates',
+  {
+    id: id(),
+    versionId: uuid()
+      .notNull()
+      .references(() => processVersions.id, { onDelete: 'cascade' }),
+    stepId: uuid().references(() => processSteps.id, { onDelete: 'cascade' }),
+    source: estimateSource().notNull(),
+    effortMinutes: integer(),
+    durationMinutes: integer(),
+    volumePerMonth: real(),
+    reasoning: text(),
+    ...timestamps,
+  },
+  (t) => [uniqueIndex('value_estimates_unique').on(t.versionId, t.stepId, t.source)],
+);
