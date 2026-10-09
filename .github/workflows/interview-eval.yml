@@ -19,12 +19,12 @@ jobs:
     env:
       LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Check the model key is configured
         run: |
           if [ -z "$LLM_API_KEY" ]; then echo "::error::Add the LLM_API_KEY repository secret to run the evaluation."; exit 1; fi
       - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: pnpm
