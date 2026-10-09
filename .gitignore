@@ -11,3 +11,4 @@ apps/api/scripts/eval/results.jsonl
 # Demo server: settings and database backups stay on the server
 deploy/.env
 deploy/backups/
+deploy/azure/.state/

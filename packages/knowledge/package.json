@@ -12,6 +12,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@azure/storage-blob": "^12.34.0",
     "@process-ai/db": "workspace:*",
     "@process-ai/shared": "workspace:*",
     "drizzle-orm": "^0.45.3",
@@ -27,6 +28,7 @@
     "@types/pdfkit": "^0.17.6",
     "docx": "^9.8.1",
     "pdfkit": "^0.20.2",
+    "testcontainers": "^12.2.0",
     "typescript": "~6.0.3",
     "vitest": "^5.0.3"
   }

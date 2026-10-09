@@ -53,8 +53,19 @@ const ConfigSchema = z
     LLM_EMBEDDING_MODEL: z.string().default('text-embedding-3-small'),
     /** Where uploaded documents are stored (a Docker volume in production). */
     STORAGE_DIR: z.string().default('./storage'),
+    /** local: files on disk (STORAGE_DIR); azure: Azure Blob Storage (hosts without a permanent disk). */
+    STORAGE_DRIVER: z.enum(['local', 'azure']).default('local'),
+    AZURE_STORAGE_CONNECTION_STRING: z.string().optional(),
+    AZURE_STORAGE_CONTAINER: z.string().default('process-ai'),
   })
   .superRefine((c, ctx) => {
+    if (c.STORAGE_DRIVER === 'azure' && !c.AZURE_STORAGE_CONNECTION_STRING) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['STORAGE_DRIVER'],
+        message: 'STORAGE_DRIVER=azure needs AZURE_STORAGE_CONNECTION_STRING.',
+      });
+    }
     if (c.AUTH_MODE === 'entra' && (!c.ENTRA_TENANT_ID || !c.ENTRA_CLIENT_ID)) {
       ctx.addIssue({
         code: 'custom',

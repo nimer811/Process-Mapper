@@ -14,6 +14,7 @@ import type { Db } from '@process-ai/db';
 import { AiSdkGateway, LlmDocumentClassifier, type LlmGateway } from '@process-ai/agent';
 import { documents, eq } from '@process-ai/db';
 import {
+  AzureBlobFileStore,
   ingestDocument,
   LocalFileStore,
   type Embedder,
@@ -77,7 +78,14 @@ export async function buildApp(
   opts: FastifyServerOptions = {},
 ) {
   const model = llm === undefined ? llmFromConfig(config) : llm;
-  const fileStore = store ?? new LocalFileStore(config.STORAGE_DIR);
+  const fileStore =
+    store ??
+    (config.STORAGE_DRIVER === 'azure'
+      ? new AzureBlobFileStore(
+          config.AZURE_STORAGE_CONNECTION_STRING!,
+          config.AZURE_STORAGE_CONTAINER,
+        )
+      : new LocalFileStore(config.STORAGE_DIR));
   const app = Fastify({
     logger: {
       level: config.LOG_LEVEL,

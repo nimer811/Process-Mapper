@@ -2,6 +2,7 @@ export { inspectFile, MAX_UPLOAD_BYTES, UnsupportedFileError, type FileKind } fr
 export { parseDocument, NoTextError, type Block } from './parse.js';
 export { chunkBlocks, estimateTokens, type Chunk } from './chunk.js';
 export { LocalFileStore, type FileStore } from './storage.js';
+export { AzureBlobFileStore } from './azure-blob-store.js';
 export { HashEmbedder, type Embedder } from './embedder.js';
 export { ingestDocument } from './ingest.js';
 export {
