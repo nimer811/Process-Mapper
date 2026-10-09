@@ -1,12 +1,9 @@
-import { DEV_USER_HEADER } from '@process-ai/shared';
-import { getDevUserId } from '@/auth/dev-session';
+import { authHeaders } from '@/auth/headers';
 import { ApiError } from './api';
 
 /** Downloads an authenticated API file and saves it with the server-provided filename. */
 export async function downloadFile(path: string, fallbackName: string) {
-  const headers = new Headers();
-  const devUserId = getDevUserId();
-  if (devUserId) headers.set(DEV_USER_HEADER, devUserId);
+  const headers = new Headers(await authHeaders());
 
   const res = await fetch(`/api/v1${path}`, { headers });
   if (!res.ok) {

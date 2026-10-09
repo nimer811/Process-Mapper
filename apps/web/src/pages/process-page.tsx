@@ -36,6 +36,7 @@ import { OwnershipPanel } from '@/features/ownership/ownership-panel';
 import { ClassificationPicker } from '@/features/architecture/classification';
 import { ConnectedProcesses } from '@/features/architecture/connected-processes';
 import { ValuePanel } from '@/features/value/value-panel';
+import { ReviewCard } from '@/features/reviews/review-card';
 import { StepDialog } from '@/features/governance/step-dialog';
 import { ConnectionsEditor, RulesEditor } from '@/features/governance/structure-editors';
 import { MetadataDialog } from '@/features/governance/metadata-dialog';
@@ -117,6 +118,9 @@ export function ProcessPage() {
 
       <div className="mt-4">
         <ReviewPanel graph={g} readiness={r} />
+      </div>
+      <div className="mt-4 empty:hidden">
+        <ReviewCard processId={p.id} />
       </div>
       {g.kind === 'as_is' && (
         <div className="mt-4">

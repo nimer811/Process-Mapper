@@ -24,6 +24,7 @@ import {
 } from '@process-ai/shared';
 import { audit } from '../../lib/audit.js';
 import type { JobQueue } from '../../lib/jobs.js';
+import { flagDocumentChange, replacedDocuments } from '../reviews/service.js';
 import { documentsForProcess, listDocuments, listKnowledgeBases, slugify } from './service.js';
 
 const IdParams = z.object({ id: z.uuid() });
@@ -236,6 +237,14 @@ export const knowledgeRoutes: FastifyPluginAsyncZod<{
         return doc!;
       });
       await jobs.enqueueIngest(created.id);
+      // A document with the same title in the same knowledge base is a new version of it.
+      for (const old of await replacedDocuments(db, created.id)) {
+        await flagDocumentChange(
+          db,
+          old.id,
+          `A newer version was uploaded (${file.filename}).`,
+        ).catch((err) => request.log.warn({ err }, 'Change alert failed'));
+      }
       return created;
     } catch (e) {
       await store.delete(storageKey);
@@ -357,6 +366,25 @@ export const knowledgeRoutes: FastifyPluginAsyncZod<{
           after,
         });
       });
+      // Changes that matter to processes relying on the document.
+      const what = [
+        changes.isActive === false && before.isActive && 'deactivated',
+        changes.isActive === true && !before.isActive && 'reactivated',
+        changes.docVersion !== undefined &&
+          changes.docVersion !== before.docVersion &&
+          `version changed to ${changes.docVersion ?? 'none'}`,
+        changes.effectiveDate !== undefined &&
+          changes.effectiveDate !== before.effectiveDate &&
+          `effective date changed to ${changes.effectiveDate ?? 'none'}`,
+        changes.title !== undefined &&
+          changes.title !== before.title &&
+          `renamed to "${changes.title}"`,
+      ].filter(Boolean);
+      if (what.length) {
+        await flagDocumentChange(db, before.id, `The document was ${what.join(', ')}.`).catch(
+          (err) => request.log.warn({ err }, 'Change alert failed'),
+        );
+      }
       const [doc] = await listDocuments(db, { documentId: before.id });
       return doc!;
     },
@@ -378,6 +406,10 @@ export const knowledgeRoutes: FastifyPluginAsyncZod<{
     app.requireRole(request, 'admin');
     const doc = await db.query.documents.findFirst({ where: eq(documents.id, request.params.id) });
     if (!doc) throw app.httpErrors.notFound('Document not found');
+    // Alert relying processes while the document (and its passages) can still be traced.
+    await flagDocumentChange(db, doc.id, 'The document was removed from the knowledge base.').catch(
+      (err) => request.log.warn({ err }, 'Change alert failed'),
+    );
     await db.transaction(async (tx) => {
       await tx.delete(documents).where(eq(documents.id, doc.id)); // chunks cascade; evidence keeps the row with chunk_id null
       await audit(tx as unknown as Db, request, {

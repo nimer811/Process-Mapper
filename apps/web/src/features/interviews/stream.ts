@@ -1,5 +1,5 @@
-import { DEV_USER_HEADER, type InterviewStreamEvent } from '@process-ai/shared';
-import { getDevUserId } from '@/auth/dev-session';
+import type { InterviewStreamEvent } from '@process-ai/shared';
+import { authHeaders } from '@/auth/headers';
 import { ApiError } from '@/lib/api';
 
 /** Posts a message and yields the interviewer's server-sent events as they arrive. */
@@ -7,9 +7,11 @@ export async function* sendInterviewMessage(
   interviewId: string,
   text: string,
 ): AsyncGenerator<InterviewStreamEvent> {
-  const headers = new Headers({ 'content-type': 'application/json', accept: 'text/event-stream' });
-  const devUserId = getDevUserId();
-  if (devUserId) headers.set(DEV_USER_HEADER, devUserId);
+  const headers = new Headers({
+    'content-type': 'application/json',
+    accept: 'text/event-stream',
+    ...(await authHeaders()),
+  });
 
   const res = await fetch(`/api/v1/interviews/${interviewId}/messages`, {
     method: 'POST',

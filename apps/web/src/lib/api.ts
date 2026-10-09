@@ -1,5 +1,5 @@
-import { DEV_USER_HEADER, type ProblemDetails } from '@process-ai/shared';
-import { getDevUserId } from '@/auth/dev-session';
+import type { ProblemDetails } from '@process-ai/shared';
+import { authHeaders } from '@/auth/headers';
 
 export class ApiError extends Error {
   constructor(public readonly problem: ProblemDetails) {
@@ -15,8 +15,7 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   const headers = new Headers(init.headers);
   headers.set('accept', 'application/json');
   if (init.body && !headers.has('content-type')) headers.set('content-type', 'application/json');
-  const devUserId = getDevUserId();
-  if (devUserId) headers.set(DEV_USER_HEADER, devUserId);
+  for (const [k, v] of Object.entries(await authHeaders())) headers.set(k, v);
 
   const res = await fetch(`/api/v1${path}`, { ...init, headers });
   if (!res.ok) {

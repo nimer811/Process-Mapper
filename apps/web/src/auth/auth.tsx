@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { CurrentUser, UserRole } from '@process-ai/shared';
 import { api, ApiError } from '@/lib/api';
 import { setDevUserId } from './dev-session';
+import { isEntra, signOutOfMicrosoft } from './entra';
 
 interface AuthState {
   user: CurrentUser | null;
@@ -37,6 +38,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await queryClient.invalidateQueries({ queryKey: ['me'] });
     },
     signOut: () => {
+      if (isEntra()) {
+        queryClient.clear();
+        void signOutOfMicrosoft();
+        return;
+      }
       setDevUserId(null);
       queryClient.clear();
       // A full load of the sign-in page resets every cached query and open stream for the old user.

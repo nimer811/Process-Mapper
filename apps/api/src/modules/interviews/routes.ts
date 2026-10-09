@@ -113,6 +113,8 @@ export const interviewRoutes: FastifyPluginAsyncZod<{ db: Db; llm: LlmGateway | 
     async (request, reply) => {
       const { user, summary } = await load(request, request.params.id, true);
       const e = requireEngine();
+      // Fail clearly when the AI budget is used up, rather than replying with fallbacks.
+      await llm?.assertBudget?.();
       const events = e.postMessage({
         sessionId: request.params.id,
         userId: user.id,

@@ -12,6 +12,8 @@ import { InterviewsPage } from '@/pages/interviews-page';
 import { InboxPage } from '@/pages/inbox-page';
 import { FlowPage } from '@/pages/flow-page';
 import { ClassificationPage } from '@/pages/admin/classification-page';
+import { AiUsagePage } from '@/pages/admin/ai-usage-page';
+import { PeoplePage } from '@/pages/admin/people-page';
 import { InterviewPage } from '@/pages/interview-page';
 import { ChatPage } from '@/pages/chat-page';
 import { KnowledgeBasePage, KnowledgePage } from '@/pages/knowledge-page';
@@ -48,6 +50,8 @@ export const router = createBrowserRouter([
               { path: 'admin/approvals', element: <ApprovalsPage /> },
               { path: 'admin/best-practices', element: <BestPracticesPage /> },
               { path: 'admin/classification', element: <ClassificationPage /> },
+              { path: 'admin/ai-usage', element: <AiUsagePage /> },
+              { path: 'admin/people', element: <PeoplePage /> },
               { path: 'admin/knowledge', element: <KnowledgePage admin /> },
               { path: 'admin/knowledge/:knowledgeBaseId', element: <KnowledgeBasePage admin /> },
             ],

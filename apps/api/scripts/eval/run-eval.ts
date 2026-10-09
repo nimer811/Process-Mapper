@@ -30,6 +30,10 @@ const arg = (name: string) => {
 const maxTurns = Number(arg('max-turns') ?? 30);
 const label = arg('label') ?? 'run';
 const only = arg('scenario');
+// Quality bar (averages across scenarios, in %): the run fails below any of them.
+const minStepRecall = Number(arg('min-step-recall') ?? 0);
+const minSpecificActors = Number(arg('min-specific-actors') ?? 0);
+const minFollowUp = Number(arg('min-follow-up') ?? 0);
 
 const llm = new AiSdkGateway({
   provider: 'openai',
@@ -259,3 +263,23 @@ console.table(
     return rest;
   }),
 );
+
+// ---------- quality bar ----------
+const avg = (key: string) =>
+  results.length
+    ? Math.round(
+        results.reduce<number>(
+          (sum, r) => sum + Number((r as Record<string, unknown>)[key] ?? 0),
+          0,
+        ) / results.length,
+      )
+    : 0;
+const bar = [
+  ['step recall', avg('stepRecallPct'), minStepRecall],
+  ['specific actors', avg('actorsSpecificPct'), minSpecificActors],
+  ['follow-up questions', avg('followUpPct'), minFollowUp],
+] as const;
+const failed = bar.filter(([, value, min]) => value < min);
+for (const [name, value, min] of bar)
+  console.log(`${value < min ? 'FAIL' : 'ok  '} ${name}: ${value}% (min ${min}%)`);
+if (failed.length) process.exit(1);

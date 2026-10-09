@@ -62,6 +62,8 @@ export const interviewSessions = pgTable(
     turnCount: integer().notNull().default(0),
     /** Turn number when the stage last changed (for stage time-boxing). */
     stageEnteredTurn: integer().notNull().default(0),
+    /** When the transcript was removed under the retention policy (process facts stay). */
+    transcriptPurgedAt: timestamp({ withTimezone: true }),
     lastActivityAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
     ...timestamps,
   },
@@ -125,6 +127,9 @@ export const llmCalls = pgTable(
   {
     id: id(),
     sessionId: uuid().references(() => interviewSessions.id, { onDelete: 'set null' }),
+    /** For usage by department: the process the call was about (when known) and who triggered it. */
+    processId: uuid().references(() => processes.id, { onDelete: 'set null' }),
+    userId: uuid().references(() => users.id, { onDelete: 'set null' }),
     purpose: text().notNull(),
     provider: text().notNull(),
     model: text().notNull(),

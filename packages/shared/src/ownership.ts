@@ -36,7 +36,12 @@ export const BestPracticeInput = z.object({
 });
 export type BestPracticeInput = z.infer<typeof BestPracticeInput>;
 
-export const checkKinds = ['segregation_of_duties', 'delegation_of_authority', 'control_gap', 'ownership'] as const;
+export const checkKinds = [
+  'segregation_of_duties',
+  'delegation_of_authority',
+  'control_gap',
+  'ownership',
+] as const;
 
 /** A finding from the automatic ownership and control checks (code, not AI). */
 export const DesignCheck = z.object({

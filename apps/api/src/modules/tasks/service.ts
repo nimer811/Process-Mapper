@@ -30,6 +30,8 @@ const LIFECYCLE_KINDS: TaskKind[] = [
   'approve',
   'add_view',
   'resolve_disagreements',
+  'review_due',
+  'check_change',
 ];
 
 /**
@@ -72,7 +74,13 @@ export async function openTask(db: Db, t: NewTask, notifier: Notifier = noNotifi
 /** Closes open tasks matching the filter. */
 export async function closeTasks(
   db: Db,
-  filter: { kinds: TaskKind[]; versionId?: string; sessionId?: string; keepIds?: string[] },
+  filter: {
+    kinds: TaskKind[];
+    versionId?: string;
+    sessionId?: string;
+    processId?: string;
+    keepIds?: string[];
+  },
   status: 'done' | 'dismissed' = 'done',
 ) {
   await db
@@ -84,6 +92,7 @@ export async function closeTasks(
         inArray(tasks.kind, filter.kinds),
         filter.versionId ? eq(tasks.versionId, filter.versionId) : undefined,
         filter.sessionId ? eq(tasks.sessionId, filter.sessionId) : undefined,
+        filter.processId ? eq(tasks.processId, filter.processId) : undefined,
         filter.keepIds?.length ? notInArray(tasks.id, filter.keepIds) : undefined,
       ),
     );

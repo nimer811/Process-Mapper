@@ -3,6 +3,7 @@ import {
   BookOpen,
   Building2,
   ClipboardCheck,
+  Gauge,
   Lightbulb,
   Network,
   MessagesSquare,
@@ -57,10 +58,16 @@ const sections: {
     to: '/admin/classification',
   },
   {
-    title: 'Users and owners',
-    description: 'Roles and process ownership.',
+    title: 'People and data',
+    description: "Export or erase a person's data; transcript retention.",
     icon: Users,
-    phase: 'Phase 6',
+    to: '/admin/people',
+  },
+  {
+    title: 'AI usage',
+    description: 'Tokens, cost and budget by department and kind of work.',
+    icon: Gauge,
+    to: '/admin/ai-usage',
   },
   {
     title: 'Audit log',

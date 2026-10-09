@@ -18,3 +18,10 @@ export type DevUser = z.infer<typeof DevUser>;
 
 /** Header used by the SPA in AUTH_MODE=dev to identify the selected seeded user. */
 export const DEV_USER_HEADER = 'x-dev-user-id';
+
+/** How the web app signs people in (public). */
+export const AuthConfig = z.object({
+  mode: z.enum(['dev', 'entra']),
+  entra: z.object({ tenantId: z.string(), clientId: z.string(), scope: z.string() }).nullable(),
+});
+export type AuthConfig = z.infer<typeof AuthConfig>;

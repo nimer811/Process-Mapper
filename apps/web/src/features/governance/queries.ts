@@ -67,6 +67,7 @@ export function useRefreshProcess() {
         'flow',
         'coverage',
         'value',
+        'review',
         'tasks',
         'contributors',
         'disagreements',

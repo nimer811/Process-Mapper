@@ -10,7 +10,13 @@ export { loadState, UNTITLED } from './interview/repository.js';
 export { FIELD_LABEL as DISAGREEMENT_FIELD_LABEL } from './interview/disagreements.js';
 export { analyzeGaps, completeness } from './interview/gaps.js';
 export type { InterviewState } from './interview/state.js';
-export { type LlmGateway, LlmNotConfiguredError } from './llm/gateway.js';
+export {
+  type LlmCallRecord,
+  type LlmGateway,
+  LlmNotConfiguredError,
+  type ObjectRequest,
+  type TextRequest,
+} from './llm/gateway.js';
 export { AiSdkGateway, type AiSdkGatewayConfig } from './llm/ai-sdk-gateway.js';
 export { MockGateway } from './llm/mock-gateway.js';
 export { analyzeProcess } from './analysis/heuristics.js';

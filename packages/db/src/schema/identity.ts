@@ -16,6 +16,8 @@ export const users = pgTable('users', {
   roles: userRole().array().notNull().default(['user']),
   isActive: boolean().notNull().default(true),
   lastLoginAt: timestamp({ withTimezone: true }),
+  /** Personal data removed (left the organisation); the account stays as an anonymous reference. */
+  erasedAt: timestamp({ withTimezone: true }),
   ...timestamps,
 });
 

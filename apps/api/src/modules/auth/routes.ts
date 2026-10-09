@@ -1,13 +1,27 @@
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 import { asc, eq, type Db, users } from '@process-ai/db';
-import { CurrentUser, DevUser } from '@process-ai/shared';
+import { AuthConfig, CurrentUser, DevUser } from '@process-ai/shared';
 import type { Config } from '../../config.js';
 
 export const authRoutes: FastifyPluginAsyncZod<{ db: Db; config: Config }> = async (
   app,
   { db, config },
 ) => {
+  /** Public: how the SPA should sign people in. */
+  app.get('/auth/config', { schema: { response: { 200: AuthConfig } } }, async () =>
+    config.AUTH_MODE === 'entra'
+      ? {
+          mode: 'entra' as const,
+          entra: {
+            tenantId: config.ENTRA_TENANT_ID!,
+            clientId: config.ENTRA_CLIENT_ID!,
+            scope: config.ENTRA_API_SCOPE ?? `api://${config.ENTRA_CLIENT_ID}/access_as_user`,
+          },
+        }
+      : { mode: 'dev' as const, entra: null },
+  );
+
   app.get('/me', { schema: { response: { 200: CurrentUser } } }, async (request) => {
     return app.requireUser(request);
   });

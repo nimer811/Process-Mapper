@@ -3,11 +3,14 @@ import { z } from 'zod';
 import { and, eq, tasks, type Db } from '@process-ai/db';
 import { Task } from '@process-ai/shared';
 import { listTasks } from './service.js';
+import { refreshReviewTasks } from '../reviews/service.js';
 
 export const taskRoutes: FastifyPluginAsyncZod<{ db: Db }> = async (app, { db }) => {
-  app.get('/tasks', { schema: { response: { 200: z.array(Task) } } }, async (request) =>
-    listTasks(db, app.requireUser(request).id),
-  );
+  app.get('/tasks', { schema: { response: { 200: z.array(Task) } } }, async (request) => {
+    const user = app.requireUser(request);
+    await refreshReviewTasks(db, user.id);
+    return listTasks(db, user.id);
+  });
 
   /** Nudges can be dismissed; review tasks close themselves when the action is done. */
   app.post(

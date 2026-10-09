@@ -11,3 +11,4 @@ export * from './sop.js';
 export * from './ownership.js';
 export * from './architecture.js';
 export * from './value.js';
+export * from './reviews.js';

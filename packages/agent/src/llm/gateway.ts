@@ -49,6 +49,8 @@ export interface LlmGateway extends Embedder {
   generateObject<T>(req: ObjectRequest<T>, onCall?: (r: LlmCallRecord) => void): Promise<T>;
   /** Streams text chunks; the full text is the concatenation. */
   streamText(req: TextRequest, onCall?: (r: LlmCallRecord) => void): AsyncIterable<string>;
+  /** Throws when the organisation's AI budget is used up (when a budget applies). */
+  assertBudget?(): Promise<void>;
 }
 
 export class LlmNotConfiguredError extends Error {

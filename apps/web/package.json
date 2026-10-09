@@ -11,6 +11,7 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
+    "@azure/msal-browser": "^4.30.0",
     "@fontsource-variable/geist": "^5.3.0",
     "@process-ai/diagram": "workspace:*",
     "@process-ai/shared": "workspace:*",

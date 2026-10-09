@@ -8,6 +8,8 @@ import {
   UserRoundPlus,
   Users,
   Scale,
+  CalendarClock,
+  FileWarning,
   X,
   type LucideIcon,
 } from 'lucide-react';
@@ -25,6 +27,8 @@ const ICON: Record<TaskKind, LucideIcon> = {
   approve: Stamp,
   add_view: Users,
   resolve_disagreements: Scale,
+  review_due: CalendarClock,
+  check_change: FileWarning,
 };
 
 const ACTION: Record<TaskKind, string> = {
@@ -35,6 +39,8 @@ const ACTION: Record<TaskKind, string> = {
   approve: 'Review',
   add_view: 'Start',
   resolve_disagreements: 'Decide',
+  review_due: 'Review',
+  check_change: 'Check',
 };
 
 export function TaskList({ tasks, compact = false }: { tasks: Task[]; compact?: boolean }) {

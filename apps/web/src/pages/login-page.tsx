@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import type { DevUser } from '@process-ai/shared';
 import { api } from '@/lib/api';
 import { useAuth } from '@/auth/auth';
+import { isEntra, isSignedIn, signInWithMicrosoft } from '@/auth/entra';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -14,9 +15,11 @@ export function LoginPage() {
   const location = useLocation();
   const from = (location.state as { from?: string } | null)?.from ?? '/';
 
+  const entra = isEntra();
   const devUsers = useQuery({
     queryKey: ['dev-users'],
     queryFn: () => api<DevUser[]>('/auth/dev-users'),
+    enabled: !entra,
   });
 
   if (user) return <Navigate to={from} replace />;
@@ -31,11 +34,24 @@ export function LoginPage() {
           </div>
           <CardTitle>Sign in</CardTitle>
           <CardDescription>
-            Development mode: choose a seeded user. Microsoft Entra ID sign-in replaces this in the
-            pilot environment.
+            {entra
+              ? 'Sign in with your organisation account.'
+              : 'Development mode: choose a seeded user. Microsoft Entra ID sign-in is used in the pilot environment.'}
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-2">
+          {entra && (
+            <>
+              <Button className="h-11" onClick={() => void signInWithMicrosoft()}>
+                Sign in with Microsoft
+              </Button>
+              {isSignedIn() && !user && (
+                <p className="text-destructive text-sm">
+                  Your account is signed in but has no access to Process AI. Ask an administrator.
+                </p>
+              )}
+            </>
+          )}
           {devUsers.isPending &&
             Array.from({ length: 3 }, (_, i) => <Skeleton key={i} className="h-14 w-full" />)}
           {devUsers.isError && (

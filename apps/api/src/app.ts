@@ -26,7 +26,9 @@ import { analysisRoutes } from './modules/analysis/routes.js';
 import { designRoutes } from './modules/design/routes.js';
 import type { Config } from './config.js';
 import { registerErrorHandling } from './plugins/errors.js';
+import type { JWTVerifyGetKey } from 'jose';
 import { authPlugin } from './plugins/auth.js';
+import { RecordingGateway, registerAiContext } from './lib/ai-usage.js';
 import { healthRoutes } from './modules/health/routes.js';
 import { authRoutes } from './modules/auth/routes.js';
 import { departmentRoutes } from './modules/departments/routes.js';
@@ -40,6 +42,8 @@ import { sopRoutes } from './modules/sop/routes.js';
 import { practiceRoutes } from './modules/practices/routes.js';
 import { architectureRoutes } from './modules/architecture/routes.js';
 import { valueRoutes } from './modules/value/routes.js';
+import { reviewRoutes } from './modules/reviews/routes.js';
+import { adminRoutes } from './modules/admin/routes.js';
 
 export interface AppDeps {
   config: Config;
@@ -50,6 +54,8 @@ export interface AppDeps {
   store?: FileStore;
   /** "inline" runs indexing immediately (tests); default is the pg-boss queue. */
   jobs?: 'inline' | 'pgboss';
+  /** Injected in tests: keys that sign Entra test tokens (otherwise Microsoft's published keys). */
+  entraKeys?: JWTVerifyGetKey;
 }
 
 export function llmFromConfig(config: Config): LlmGateway | null {
@@ -66,10 +72,10 @@ export function llmFromConfig(config: Config): LlmGateway | null {
 }
 
 export async function buildApp(
-  { config, db, llm, store, jobs }: AppDeps,
+  { config, db, llm, store, jobs, entraKeys }: AppDeps,
   opts: FastifyServerOptions = {},
 ) {
-  const gateway = llm === undefined ? llmFromConfig(config) : llm;
+  const model = llm === undefined ? llmFromConfig(config) : llm;
   const fileStore = store ?? new LocalFileStore(config.STORAGE_DIR);
   const app = Fastify({
     logger: {
@@ -87,6 +93,13 @@ export async function buildApp(
   await app.register(sensible);
   await app.register(multipart, { limits: UPLOAD_LIMITS });
 
+  // Every AI call is logged (user, process, tokens) and stops once the monthly budget is used.
+  const gateway = model
+    ? new RecordingGateway(model, db, {
+        monthlyTokenBudget: config.AI_MONTHLY_TOKEN_BUDGET,
+        log: app.log,
+      })
+    : null;
   const embedder: Embedder | null = gateway;
   const classifier = gateway ? new LlmDocumentClassifier(gateway) : null;
   const ingest = async (documentId: string) => {
@@ -114,7 +127,8 @@ export async function buildApp(
   app.addHook('onClose', () => queue.stop());
   if (config.CORS_ORIGIN) await app.register(cors, { origin: config.CORS_ORIGIN });
   registerErrorHandling(app);
-  await app.register(authPlugin, { config, db });
+  await app.register(authPlugin, { config, db, entraKeys });
+  registerAiContext(app);
 
   await app.register(healthRoutes, { db });
   await app.register(
@@ -132,6 +146,8 @@ export async function buildApp(
       await api.register(practiceRoutes, { db });
       await api.register(architectureRoutes, { db, llm: gateway });
       await api.register(valueRoutes, { db, llm: gateway });
+      await api.register(reviewRoutes, { db });
+      await api.register(adminRoutes, { db, config });
       await api.register(sopRoutes, {
         db,
         llm: gateway,

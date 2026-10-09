@@ -139,6 +139,9 @@ export const processVersions = pgTable(
     validatedAt: timestamp({ withTimezone: true }),
     approvedBy: uuid().references(() => users.id),
     approvedAt: timestamp({ withTimezone: true }),
+    /** Last periodic review without changes (resets the review clock). */
+    reviewedAt: timestamp({ withTimezone: true }),
+    reviewedBy: uuid().references(() => users.id),
     ...timestamps,
   },
   (t) => [unique().on(t.processId, t.kind, t.versionNumber), index().on(t.processId)],
@@ -339,4 +342,26 @@ export const processLinks = pgTable(
     ...timestamps,
   },
   (t) => [unique().on(t.fromProcessId, t.toProcessId), index().on(t.toProcessId)],
+);
+
+/** Something that may have changed a process's validity: a linked document changed. The owner checks it. */
+export const processAlerts = pgTable(
+  'process_alerts',
+  {
+    id: id(),
+    processId: uuid()
+      .notNull()
+      .references(() => processes.id, { onDelete: 'cascade' }),
+    kind: text({ enum: ['document_changed'] }).notNull(),
+    /** Document that changed (kept as text too, in case the document is deleted). */
+    documentId: uuid(),
+    documentTitle: text().notNull(),
+    change: text().notNull(),
+    status: text({ enum: ['open', 'resolved'] }).notNull().default('open'),
+    resolution: text(),
+    resolvedBy: uuid().references(() => users.id),
+    resolvedAt: timestamp({ withTimezone: true }),
+    ...timestamps,
+  },
+  (t) => [index().on(t.processId, t.status)],
 );

@@ -9,6 +9,8 @@ export const taskKinds = [
   'approve', // admin: a validated version is waiting for approval
   'add_view', // colleague: invited to add their view on a process
   'resolve_disagreements', // process owner: people described the process differently
+  'review_due', // process owner: the periodic review is due
+  'check_change', // process owner: a linked document changed; check the impact
 ] as const;
 export const TaskKind = z.enum(taskKinds);
 export type TaskKind = z.infer<typeof TaskKind>;

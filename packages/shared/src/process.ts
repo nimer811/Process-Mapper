@@ -63,6 +63,7 @@ export const validationActions = [
   'returned',
   'archived',
   'reopened',
+  'reviewed',
 ] as const;
 export const ValidationAction = z.enum(validationActions);
 

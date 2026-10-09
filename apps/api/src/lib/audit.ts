@@ -8,7 +8,8 @@ export async function audit(
   entry: {
     action: string;
     entityType: string;
-    entityId: string;
+    /** Null for system-wide actions (e.g. a retention run). */
+    entityId: string | null;
     before?: unknown;
     after?: unknown;
   },

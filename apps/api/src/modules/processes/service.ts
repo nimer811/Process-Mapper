@@ -79,7 +79,11 @@ export async function listProcesses(
       process: processes,
       department: { id: departments.id, name: departments.name, slug: departments.slug },
       owner: { id: owner.id, displayName: owner.displayName, email: owner.email },
-      category: { id: processCategories.id, code: processCategories.code, name: processCategories.name },
+      category: {
+        id: processCategories.id,
+        code: processCategories.code,
+        name: processCategories.name,
+      },
     })
     .from(processes)
     .innerJoin(departments, eq(departments.id, processes.departmentId))
@@ -140,7 +144,7 @@ export async function listProcesses(
       status: v.status,
       description: v.description,
       stepCount: stepCountByVersion.get(v.id) ?? 0,
-      lastReviewedAt: isoOrNull(v.approvedAt ?? v.validatedAt),
+      lastReviewedAt: isoOrNull(v.reviewedAt ?? v.approvedAt ?? v.validatedAt),
       updatedAt: iso(v.updatedAt),
       category: category?.id ? category : null,
     });
@@ -157,7 +161,11 @@ export async function getProcess(
     .select({
       process: processes,
       department: { id: departments.id, name: departments.name, slug: departments.slug },
-      category: { id: processCategories.id, code: processCategories.code, name: processCategories.name },
+      category: {
+        id: processCategories.id,
+        code: processCategories.code,
+        name: processCategories.name,
+      },
     })
     .from(processes)
     .innerJoin(departments, eq(departments.id, processes.departmentId))

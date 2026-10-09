@@ -57,3 +57,50 @@ export const ValueFigureInput = z.object({
   durationMinutes: z.number().min(0).max(1_000_000).nullable().optional(),
   volumePerMonth: z.number().min(0).max(1_000_000).nullable().optional(),
 });
+
+const UsageRow = z.object({
+  key: z.string(),
+  label: z.string(),
+  calls: z.number().int(),
+  failures: z.number().int(),
+  inputTokens: z.number(),
+  outputTokens: z.number(),
+  /** USD; null when prices are not configured. */
+  cost: z.number().nullable(),
+});
+
+/** AI usage for a month: totals, budget, and breakdowns by department, purpose and person. */
+export const AiUsage = z.object({
+  month: z.string(),
+  budgetTokens: z.number().int(),
+  usedTokens: z.number(),
+  pricesConfigured: z.boolean(),
+  totals: UsageRow,
+  byDepartment: z.array(UsageRow),
+  byPurpose: z.array(UsageRow),
+  byUser: z.array(UsageRow),
+  /** Last six months, oldest first. */
+  trend: z.array(z.object({ month: z.string(), tokens: z.number(), cost: z.number().nullable() })),
+  avgLatencyMs: z.number().nullable(),
+});
+export type AiUsage = z.infer<typeof AiUsage>;
+
+/** A person as admins see them for data requests. */
+export const PersonRecord = z.object({
+  id: z.uuid(),
+  displayName: z.string(),
+  email: z.string(),
+  roles: z.array(z.string()),
+  isActive: z.boolean(),
+  erasedAt: z.iso.datetime().nullable(),
+  lastLoginAt: z.iso.datetime().nullable(),
+  interviews: z.number().int(),
+});
+export type PersonRecord = z.infer<typeof PersonRecord>;
+
+export const AdminSettings = z.object({
+  authMode: z.enum(['dev', 'entra']),
+  transcriptRetentionMonths: z.number().int(),
+  aiMonthlyTokenBudget: z.number().int(),
+});
+export type AdminSettings = z.infer<typeof AdminSettings>;
